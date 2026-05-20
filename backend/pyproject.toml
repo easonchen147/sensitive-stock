@@ -1,0 +1,58 @@
+[project]
+name = "sensitive-stock-backend"
+version = "0.1.0"
+description = "Flask backend workspace for the Sensitive Stock frontend/backend runtime"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+  "flask>=3.1.1,<4.0.0",
+  "flask-cors>=6.0.0,<7.0.0",
+  "pydantic>=2.11.3,<3.0.0",
+  "akshare==1.18.49",
+  "pandas==2.2.3",
+  "numpy==2.1.2",
+  "requests==2.32.3",
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+ruff = "^0.11.13"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.5,<9.0.0",
+  "ruff>=0.11.13,<0.12.0",
+]
+
+[tool.uv]
+package = false
+default-groups = ["dev"]
+
+[[tool.poetry.source]]
+name = "tencent"
+url = "https://mirrors.cloud.tencent.com/pypi/simple/"
+priority = "primary"
+
+[[tool.uv.index]]
+name = "tencent"
+url = "https://mirrors.cloud.tencent.com/pypi/simple/"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-p", "no:cacheprovider"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [".uv-cache*", ".pytest-local", "pytest-ok", "pytesttmp*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
