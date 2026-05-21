@@ -573,6 +573,20 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "name": "symbols",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Symbols",
+              "type": "array"
+            },
+            "style": "form",
+            "explode": false
           }
         ]
       }
@@ -643,6 +657,104 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "name": "symbols",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Symbols",
+              "type": "array"
+            },
+            "style": "form",
+            "explode": false
+          }
+        ]
+      }
+    },
+    "/api/v1/market/news/predictions": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "operationId": "getMarketNewsPredictions",
+        "summary": "Return multi-source market news predictions and backtest handoff.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketNewsPredictionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "name": "symbols",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Symbols",
+              "type": "array"
+            },
+            "style": "form",
+            "explode": false
           }
         ]
       }
@@ -1904,6 +2016,12 @@
           },
           "requestedLimit": {
             "type": "integer"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": true
@@ -2041,6 +2159,12 @@
               "items"
             ],
             "properties": {
+              "sourceQuality": {
+                "$ref": "#/components/schemas/MarketNewsSourceQuality"
+              },
+              "dedupeMetadata": {
+                "$ref": "#/components/schemas/MarketNewsDedupeMetadata"
+              },
               "items": {
                 "type": "array",
                 "items": {
@@ -2050,6 +2174,73 @@
             }
           }
         ]
+      },
+      "MarketNewsSourceQuality": {
+        "type": "object",
+        "required": [
+          "queriedChannels",
+          "succeededChannels",
+          "degradedChannels",
+          "failedChannels",
+          "totalItems",
+          "uniqueItems",
+          "duplicateItems",
+          "sourceCoverage"
+        ],
+        "properties": {
+          "queriedChannels": {
+            "type": "integer"
+          },
+          "succeededChannels": {
+            "type": "integer"
+          },
+          "degradedChannels": {
+            "type": "integer"
+          },
+          "failedChannels": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          },
+          "uniqueItems": {
+            "type": "integer"
+          },
+          "duplicateItems": {
+            "type": "integer"
+          },
+          "sourceCoverage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MarketNewsDedupeMetadata": {
+        "type": "object",
+        "required": [
+          "strategy",
+          "originalCount",
+          "uniqueCount",
+          "duplicateCount"
+        ],
+        "properties": {
+          "strategy": {
+            "type": "string"
+          },
+          "originalCount": {
+            "type": "integer"
+          },
+          "uniqueCount": {
+            "type": "integer"
+          },
+          "duplicateCount": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": false
       },
       "MarketNewsItem": {
         "type": "object",
@@ -2084,6 +2275,41 @@
         },
         "additionalProperties": true
       },
+      "MarketNewsChannel": {
+        "type": "object",
+        "required": [
+          "name",
+          "source",
+          "status",
+          "itemCount"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "failed"
+            ]
+          },
+          "itemCount": {
+            "type": "integer"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
       "MarketNewsIntelligenceResponse": {
         "allOf": [
           {
@@ -2109,6 +2335,204 @@
                   "type": "object",
                   "additionalProperties": true
                 }
+              }
+            }
+          }
+        ]
+      },
+      "MarketPredictionMetadata": {
+        "type": "object",
+        "required": [
+          "provider",
+          "model",
+          "degraded",
+          "cached",
+          "schemaVersion",
+          "cacheKey",
+          "inputDigest",
+          "newsItemCount",
+          "keywordCount",
+          "sectorHintCount",
+          "symbolCount"
+        ],
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "degraded": {
+            "type": "boolean"
+          },
+          "cached": {
+            "type": "boolean"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "cacheKey": {
+            "type": "string"
+          },
+          "inputDigest": {
+            "type": "string"
+          },
+          "newsItemCount": {
+            "type": "integer"
+          },
+          "keywordCount": {
+            "type": "integer"
+          },
+          "sectorHintCount": {
+            "type": "integer"
+          },
+          "symbolCount": {
+            "type": "integer"
+          },
+          "latencyMs": {
+            "type": "integer"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "MarketPrediction": {
+        "type": "object",
+        "required": [
+          "targetType",
+          "target",
+          "direction",
+          "confidence",
+          "score",
+          "horizon",
+          "drivers",
+          "sourceIds"
+        ],
+        "properties": {
+          "targetType": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "bullish",
+              "neutral",
+              "bearish"
+            ]
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number"
+          },
+          "horizon": {
+            "type": "string"
+          },
+          "drivers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sourceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "BacktestHandoff": {
+        "type": "object",
+        "required": [
+          "endpoint",
+          "suggestedPreset",
+          "symbols",
+          "defaultParams"
+        ],
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "suggestedPreset": {
+            "type": "string"
+          },
+          "symbols": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "defaultParams": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "MarketNewsPredictionsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MarketNewsIntelligenceResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "channels",
+              "predictionMetadata",
+              "predictions",
+              "riskNotes",
+              "backtestHandoff"
+            ],
+            "properties": {
+              "channels": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MarketNewsChannel"
+                }
+              },
+              "sourceQuality": {
+                "$ref": "#/components/schemas/MarketNewsSourceQuality"
+              },
+              "dedupeMetadata": {
+                "$ref": "#/components/schemas/MarketNewsDedupeMetadata"
+              },
+              "predictionMetadata": {
+                "$ref": "#/components/schemas/MarketPredictionMetadata"
+              },
+              "predictions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MarketPrediction"
+                }
+              },
+              "predictionSummary": {
+                "type": "string"
+              },
+              "riskNotes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "backtestHandoff": {
+                "$ref": "#/components/schemas/BacktestHandoff"
               }
             }
           }

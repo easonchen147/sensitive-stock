@@ -2,7 +2,6 @@
 
 ## Purpose
 Define an AkShare-first market data contract for backend services and AKQuant-backed backtests, with explicit fallback order and callable market APIs.
-
 ## Requirements
 ### Requirement: Backend market data services SHALL use AkShare as the primary A-share data source
 The system SHALL use the latest supported AkShare interfaces as the default source for A-share historical行情、实时行情、股票基础信息和板块数据, so backend services and backtesting share a consistent primary market data contract.
@@ -50,3 +49,18 @@ The system SHALL make AkShare-first market data contracts reusable across screen
 #### Scenario: Research workflow requests normalized market history
 - **WHEN** a screener, diagnosis, factor-analysis, or portfolio workflow requests A-share market data
 - **THEN** the system resolves the request through the shared normalized market-data contract instead of introducing a workflow-specific ad hoc data shape
+
+### Requirement: Market quote and sector APIs SHALL return cache-backed degraded responses on upstream failure
+The system SHALL cache recent successful market quote and sector responses in memory and return a degraded cached payload when all configured upstream fetch attempts fail and a matching cached payload is still available.
+
+#### Scenario: Primary market quote source fails but fallback succeeds
+- **WHEN** AkShare quote retrieval fails and the direct fallback source succeeds
+- **THEN** the quote API returns normalized quote rows with explicit fallback source metadata and degraded status
+
+#### Scenario: Market quote refresh fails after a successful prior response
+- **WHEN** all quote upstream sources fail for a request that has a still-valid cached prior response
+- **THEN** the quote API returns the cached quote rows with `degraded` set to true and warning metadata explaining that cached data was used
+
+#### Scenario: Sector refresh fails after a successful prior response
+- **WHEN** all sector upstream sources fail for a request that has a still-valid cached prior response
+- **THEN** the sector API returns the cached sector rows with `degraded` set to true and warning metadata explaining that cached data was used

@@ -104,6 +104,55 @@ class StubNewsIntelligenceService:
             ],
         }
 
+    def build_predictions(self, limit: int = 100, symbols: list[str] | None = None) -> dict:
+        self.seen_limit = limit
+        return {
+            **self.build_intelligence(limit=limit),
+            "channels": [
+                {
+                    "name": "Jin10",
+                    "source": "jin10_flash_api",
+                    "status": "ok",
+                    "itemCount": 1,
+                    "warnings": [],
+                }
+            ],
+            "predictionMetadata": {
+                "provider": "local_heuristic",
+                "model": "keyword-sector-rules",
+                "degraded": True,
+                "cached": False,
+                "schemaVersion": "market-prediction-json-v1",
+                "cacheKey": "cache-1",
+                "inputDigest": "digest-1",
+                "newsItemCount": 1,
+                "keywordCount": 2,
+                "sectorHintCount": 1,
+                "symbolCount": len(symbols or []),
+                "warnings": ["DeepSeek API key is not configured."],
+            },
+            "predictions": [
+                {
+                    "targetType": "sector",
+                    "target": "绠楀姏绉熻祦",
+                    "direction": "bullish",
+                    "confidence": 0.6,
+                    "score": 3,
+                    "horizon": "1-3 trading days",
+                    "drivers": ["绠楀姏"],
+                    "sourceIds": ["news-1"],
+                }
+            ],
+            "predictionSummary": "stub prediction",
+            "riskNotes": ["Validate with backtests."],
+            "backtestHandoff": {
+                "endpoint": "/api/v1/backtests/run",
+                "suggestedPreset": "event_theme_momentum",
+                "symbols": symbols or [],
+                "defaultParams": {"lookback_window": 20},
+            },
+        }
+
 
 def test_market_overview_endpoint_returns_real_service_payload() -> None:
     app = create_app(

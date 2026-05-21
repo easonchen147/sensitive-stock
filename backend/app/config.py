@@ -31,6 +31,21 @@ class DefaultConfig:
     JIN10_APP_ID = os.getenv("BACKEND_JIN10_APP_ID", "bVBF4FyRTn5NJF5n")
     JIN10_API_VERSION = os.getenv("BACKEND_JIN10_API_VERSION", "1.0.0")
     JIN10_CHANNEL = os.getenv("BACKEND_JIN10_CHANNEL", "-8200")
+    EASTMONEY_NEWS_URL = os.getenv(
+        "BACKEND_EASTMONEY_NEWS_URL",
+        "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns",
+    )
+    SINA_FINANCE_NEWS_URL = os.getenv(
+        "BACKEND_SINA_FINANCE_NEWS_URL",
+        "https://zhibo.sina.com.cn/api/zhibo/feed",
+    )
+    DEEPSEEK_API_KEY = os.getenv("BACKEND_DEEPSEEK_API_KEY", "")
+    DEEPSEEK_BASE_URL = os.getenv("BACKEND_DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    DEEPSEEK_MODEL = os.getenv("BACKEND_DEEPSEEK_MODEL", "deepseek-v4-flash")
+    DEEPSEEK_TIMEOUT = int(os.getenv("BACKEND_DEEPSEEK_TIMEOUT", str(HTTP_TIMEOUT)))
+    DEEPSEEK_CACHE_TTL_SECONDS = int(
+        os.getenv("BACKEND_DEEPSEEK_CACHE_TTL_SECONDS", "300")
+    )
     CORS_ORIGINS = [
         origin.strip()
         for origin in os.getenv("BACKEND_CORS_ORIGINS", "http://localhost:3000").split(",")

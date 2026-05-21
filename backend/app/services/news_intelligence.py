@@ -7,7 +7,9 @@ from typing import Any
 
 import requests
 
+from .deepseek_prediction import DeepSeekMarketPredictionService
 from .market_data import AkshareMarketDataService
+from .runtime_cache import TTLCache
 
 TAG_RE = re.compile(r"<[^>]+>")
 CN_TOKEN_RE = re.compile(r"[\u4e00-\u9fa5]{2,6}")
@@ -37,6 +39,7 @@ class Jin10NewsService:
         api_version: str = "1.0.0",
         channel: str = "-8200",
         timeout: int = 10,
+        cache_ttl_seconds: int = 300,
     ) -> None:
         self.session = session or requests.Session()
         self.flash_api_url = flash_api_url
@@ -45,25 +48,47 @@ class Jin10NewsService:
         self.api_version = api_version
         self.channel = channel
         self.timeout = timeout
+        self._latest_cache: TTLCache[tuple[str, int], dict[str, Any]] = TTLCache(
+            cache_ttl_seconds
+        )
 
     def get_latest(self, limit: int = 100) -> dict[str, Any]:
         requested_limit = max(1, min(limit, 100))
+        cache_key = ("latest", requested_limit)
         try:
             items = self._fetch_latest_from_flash_api(requested_limit)
-            return {
+            payload = {
                 "source": "jin10_flash_api",
                 "requestedLimit": requested_limit,
                 "degraded": False,
+                "warnings": [],
                 "items": items,
             }
-        except Exception:
-            items = self._fetch_latest_from_public_feed(requested_limit)
-            return {
-                "source": "jin10_flash_newest_js",
-                "requestedLimit": requested_limit,
-                "degraded": True,
-                "items": items,
-            }
+        except Exception as primary_error:
+            try:
+                items = self._fetch_latest_from_public_feed(requested_limit)
+                warning = (
+                    "jin10 flash api unavailable; using public feed: "
+                    f"{_format_error(primary_error)}"
+                )
+                payload = {
+                    "source": "jin10_flash_newest_js",
+                    "requestedLimit": requested_limit,
+                    "degraded": True,
+                    "warnings": [warning],
+                    "items": items,
+                }
+            except Exception as fallback_error:
+                cached = self._latest_cache.get(cache_key)
+                if cached is None:
+                    raise
+                return self._as_degraded_cache_payload(
+                    cached,
+                    f"jin10 refresh failed; using cached news: {_format_error(fallback_error)}",
+                )
+
+        self._latest_cache.set(cache_key, payload)
+        return payload
 
     def _fetch_latest_from_flash_api(self, limit: int) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
@@ -172,15 +197,220 @@ class Jin10NewsService:
         ]
         return " ".join(piece for piece in pieces if piece)
 
+    def _as_degraded_cache_payload(self, payload: dict[str, Any], warning: str) -> dict[str, Any]:
+        warnings = list(payload.get("warnings") or [])
+        warnings.append(warning)
+        return {
+            **payload,
+            "degraded": True,
+            "warnings": warnings,
+        }
+
+
+class EastmoneyMarketNewsSource:
+    name = "Eastmoney"
+    source = "eastmoney_stock_news"
+
+    def __init__(
+        self,
+        *,
+        session: requests.Session | None = None,
+        url: str = "https://np-listapi.eastmoney.com/comm/web/getNewsByColumns",
+        timeout: int = 10,
+    ) -> None:
+        self.session = session or requests.Session()
+        self.url = url
+        self.timeout = timeout
+
+    def fetch(self, limit: int) -> list[dict[str, Any]]:
+        response = self.session.get(
+            self.url,
+            params={
+                "client": "web",
+                "biz": "web_news_col",
+                "column": "news",
+                "order": 1,
+                "needInteractData": 0,
+                "page_index": 1,
+                "page_size": limit,
+            },
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        raw_items = _extract_first_list(payload, ["list", "news", "items", "data"])
+        return [
+            _normalize_external_item(item, source=self.source, prefix="eastmoney")
+            for item in raw_items[:limit]
+        ]
+
+
+class SinaFinanceNewsSource:
+    name = "Sina Finance"
+    source = "sina_finance_live"
+
+    def __init__(
+        self,
+        *,
+        session: requests.Session | None = None,
+        url: str = "https://zhibo.sina.com.cn/api/zhibo/feed",
+        timeout: int = 10,
+    ) -> None:
+        self.session = session or requests.Session()
+        self.url = url
+        self.timeout = timeout
+
+    def fetch(self, limit: int) -> list[dict[str, Any]]:
+        response = self.session.get(
+            self.url,
+            params={"page": 1, "page_size": limit, "zhibo_id": 152, "tag_id": 0},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = _parse_jsonp_payload(response.text)
+        raw_items = _extract_first_list(payload, ["list", "feed", "items", "data"])
+        return [
+            _normalize_external_item(item, source=self.source, prefix="sina")
+            for item in raw_items[:limit]
+        ]
+
+
+class MultiSourceNewsService:
+    def __init__(
+        self,
+        *,
+        primary_service: Jin10NewsService | None = None,
+        extra_sources: list[Any] | None = None,
+        cache_ttl_seconds: int = 300,
+    ) -> None:
+        self.primary_service = primary_service or Jin10NewsService()
+        self.extra_sources = extra_sources or [
+            EastmoneyMarketNewsSource(),
+            SinaFinanceNewsSource(),
+        ]
+        self._latest_cache: TTLCache[tuple[str, int], dict[str, Any]] = TTLCache(
+            cache_ttl_seconds
+        )
+
+    def get_latest(self, limit: int = 100) -> dict[str, Any]:
+        requested_limit = max(1, min(limit, 100))
+        cache_key = ("multi_latest", requested_limit)
+        warnings: list[str] = []
+        channels: list[dict[str, Any]] = []
+        items: list[dict[str, Any]] = []
+
+        try:
+            primary_payload = self.primary_service.get_latest(limit=requested_limit)
+            primary_items = primary_payload.get("items") or []
+            items.extend(primary_items)
+            primary_warnings = [str(item) for item in primary_payload.get("warnings") or []]
+            warnings.extend(primary_warnings)
+            channels.append(
+                {
+                    "name": "Jin10",
+                    "source": primary_payload.get("source", "jin10"),
+                    "status": "degraded" if primary_payload.get("degraded") else "ok",
+                    "itemCount": len(primary_items),
+                    "warnings": primary_warnings,
+                }
+            )
+        except Exception as error:
+            warning = f"Jin10 channel failed: {_format_error(error)}"
+            warnings.append(warning)
+            channels.append(
+                {
+                    "name": "Jin10",
+                    "source": "jin10",
+                    "status": "failed",
+                    "itemCount": 0,
+                    "warnings": [warning],
+                }
+            )
+
+        for source in self.extra_sources:
+            try:
+                source_items = source.fetch(requested_limit)
+                items.extend(source_items)
+                channels.append(
+                    {
+                        "name": getattr(source, "name", getattr(source, "source", "unknown")),
+                        "source": getattr(source, "source", "unknown"),
+                        "status": "ok",
+                        "itemCount": len(source_items),
+                        "warnings": [],
+                    }
+                )
+            except Exception as error:
+                warning = (
+                    f"{getattr(source, 'name', getattr(source, 'source', 'unknown'))} "
+                    f"channel failed: {_format_error(error)}"
+                )
+                warnings.append(warning)
+                channels.append(
+                    {
+                        "name": getattr(source, "name", getattr(source, "source", "unknown")),
+                        "source": getattr(source, "source", "unknown"),
+                        "status": "failed",
+                        "itemCount": 0,
+                        "warnings": [warning],
+                    }
+                )
+
+        deduped, dedupe_metadata = _dedupe_news_items(items)
+        deduped = deduped[:requested_limit]
+        if not deduped:
+            cached = self._latest_cache.get(cache_key)
+            if cached is None:
+                raise RuntimeError("all market news channels failed")
+            return self._as_degraded_cache_payload(
+                cached,
+                "all market news channels failed; using cached aggregate news",
+            )
+
+        payload = {
+            "source": "multi_source_news",
+            "primarySource": "jin10",
+            "fallbackSources": [
+                "jin10_flash_newest_js",
+                *[getattr(source, "source", "unknown") for source in self.extra_sources],
+            ],
+            "requestedLimit": requested_limit,
+            "degraded": bool(warnings),
+            "warnings": warnings,
+            "channels": channels,
+            "sourceCount": sum(1 for channel in channels if channel["status"] != "failed"),
+            "sourceQuality": _build_source_quality(channels, items, deduped, dedupe_metadata),
+            "dedupeMetadata": dedupe_metadata,
+            "items": deduped,
+        }
+        self._latest_cache.set(cache_key, payload)
+        return payload
+
+    def _as_degraded_cache_payload(self, payload: dict[str, Any], warning: str) -> dict[str, Any]:
+        warnings = list(payload.get("warnings") or [])
+        warnings.append(warning)
+        return {
+            **payload,
+            "degraded": True,
+            "warnings": warnings,
+        }
+
 
 class MarketNewsIntelligenceService:
     def __init__(
         self,
-        news_service: Jin10NewsService | None = None,
+        news_service: Any | None = None,
         market_data_service: AkshareMarketDataService | None = None,
+        prediction_service: DeepSeekMarketPredictionService | None = None,
     ) -> None:
         self.news_service = news_service or Jin10NewsService()
         self.market_data_service = market_data_service or AkshareMarketDataService()
+        self.prediction_service = prediction_service or DeepSeekMarketPredictionService()
 
     def get_latest(self, limit: int = 100) -> dict[str, Any]:
         return self.news_service.get_latest(limit=limit)
@@ -193,6 +423,28 @@ class MarketNewsIntelligenceService:
             **latest_payload,
             "keywords": keywords,
             "sectorHints": sector_hints,
+        }
+
+    def build_predictions(
+        self,
+        limit: int = 100,
+        symbols: list[str] | None = None,
+    ) -> dict[str, Any]:
+        latest_payload = self.news_service.get_latest(limit=limit)
+        keywords = self._extract_keywords(latest_payload["items"])
+        sector_hints = self._build_sector_hints(keywords)
+        prediction_payload = self.prediction_service.predict(
+            items=latest_payload["items"],
+            keywords=keywords,
+            sector_hints=sector_hints,
+            symbols=symbols or [],
+        )
+        return {
+            **latest_payload,
+            "keywords": keywords,
+            "sectorHints": sector_hints,
+            **prediction_payload,
+            "backtestHandoff": self._build_backtest_handoff(symbols or []),
         }
 
     def _extract_keywords(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -255,3 +507,156 @@ class MarketNewsIntelligenceService:
 
         hints.sort(key=lambda item: (-item["score"], item["name"]))
         return hints[:10]
+
+    def _build_backtest_handoff(self, symbols: list[str]) -> dict[str, Any]:
+        return {
+            "endpoint": "/api/v1/backtests/run",
+            "suggestedPreset": "event_theme_momentum",
+            "symbols": symbols,
+            "defaultParams": {
+                "lookback_window": 20,
+                "volume_window": 5,
+                "volume_multiplier": 1.2,
+            },
+            "notes": [
+                "Use this handoff to validate prediction candidates through AKQuant backtests.",
+                "Predictions are research hints and should not be treated as trading instructions.",
+            ],
+        }
+
+
+def _format_error(error: Exception | None) -> str:
+    if error is None:
+        return "unknown error"
+    return f"{error.__class__.__name__}: {error}"
+
+
+def _extract_first_list(value: Any, candidate_keys: list[str]) -> list[dict[str, Any]]:
+    if isinstance(value, list):
+        return [item for item in value if isinstance(item, dict)]
+    if not isinstance(value, dict):
+        return []
+
+    for key in candidate_keys:
+        nested = value.get(key)
+        if isinstance(nested, list):
+            return [item for item in nested if isinstance(item, dict)]
+        nested_result = _extract_first_list(nested, candidate_keys)
+        if nested_result:
+            return nested_result
+
+    for nested in value.values():
+        nested_result = _extract_first_list(nested, candidate_keys)
+        if nested_result:
+            return nested_result
+    return []
+
+
+def _parse_jsonp_payload(text: str) -> dict[str, Any]:
+    stripped = text.strip()
+    if "(" in stripped and stripped.endswith(")"):
+        stripped = stripped[stripped.find("(") + 1 : -1]
+    return json.loads(stripped)
+
+
+def _normalize_external_item(
+    raw_item: dict[str, Any],
+    *,
+    source: str,
+    prefix: str,
+) -> dict[str, Any]:
+    title = TAG_RE.sub(
+        "",
+        str(
+            raw_item.get("title")
+            or raw_item.get("Title")
+            or raw_item.get("name")
+            or raw_item.get("content")
+            or ""
+        ),
+    ).strip()
+    content = TAG_RE.sub(
+        "",
+        str(
+            raw_item.get("summary")
+            or raw_item.get("digest")
+            or raw_item.get("content")
+            or raw_item.get("Content")
+            or title
+        ),
+    ).strip()
+    item_id = str(
+        raw_item.get("id")
+        or raw_item.get("code")
+        or raw_item.get("newsId")
+        or raw_item.get("url")
+        or f"{prefix}:{title[:40]}"
+    ).strip()
+    published_at = str(
+        raw_item.get("showTime")
+        or raw_item.get("time")
+        or raw_item.get("ctime")
+        or raw_item.get("date")
+        or ""
+    ).strip()
+    tags = raw_item.get("tags") or raw_item.get("keywords") or []
+    if isinstance(tags, str):
+        normalized_tags = [item.strip() for item in re.split(r"[,，\s]+", tags) if item.strip()]
+    else:
+        normalized_tags = [str(item).strip() for item in tags if str(item).strip()]
+    return {
+        "id": f"{prefix}:{item_id}",
+        "publishedAt": published_at,
+        "title": title or content[:60] or source,
+        "content": content or title,
+        "important": bool(raw_item.get("important") or raw_item.get("isImportant")),
+        "tags": normalized_tags,
+        "sourceUrl": raw_item.get("url") or raw_item.get("sourceUrl") or raw_item.get("link") or "",
+        "source": source,
+    }
+
+
+def _build_source_quality(
+    channels: list[dict[str, Any]],
+    original_items: list[dict[str, Any]],
+    unique_items: list[dict[str, Any]],
+    dedupe_metadata: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "queriedChannels": len(channels),
+        "succeededChannels": sum(1 for channel in channels if channel["status"] == "ok"),
+        "degradedChannels": sum(1 for channel in channels if channel["status"] == "degraded"),
+        "failedChannels": sum(1 for channel in channels if channel["status"] == "failed"),
+        "totalItems": len(original_items),
+        "uniqueItems": len(unique_items),
+        "duplicateItems": int(dedupe_metadata["duplicateCount"]),
+        "sourceCoverage": sorted(
+            {
+                str(item.get("source") or "unknown")
+                for item in unique_items
+                if str(item.get("source") or "").strip()
+            }
+        ),
+    }
+
+
+def _dedupe_news_items(items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for item in items:
+        title = re.sub(r"\s+", "", str(item.get("title") or "")).lower()
+        content = re.sub(r"\s+", "", str(item.get("content") or "")).lower()
+        source_url = str(item.get("sourceUrl") or "").strip().lower()
+        key = source_url or f"{title}:{content[:80]}"
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+
+    deduped.sort(key=lambda item: str(item.get("publishedAt") or ""), reverse=True)
+    return deduped, {
+        "strategy": "source-url-or-normalized-title-content",
+        "originalCount": len(items),
+        "uniqueCount": len(deduped),
+        "duplicateCount": max(0, len(items) - len(deduped)),
+    }

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:smoke": "next build && playwright test"
   },
   "dependencies": {
     "next": "16.2.1",
@@ -14,6 +15,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/node": "24.7.2",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",

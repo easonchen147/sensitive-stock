@@ -38,3 +38,15 @@ class MarketNewsQuery(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
 
     limit: int = Field(default=100, ge=1, le=100)
+    symbols: list[str] = Field(default_factory=list)
+
+    @field_validator("symbols", mode="before")
+    @classmethod
+    def normalize_symbols(cls, value: Any) -> list[str]:
+        if value in (None, ""):
+            return []
+        if isinstance(value, str):
+            items = value.split(",")
+        else:
+            items = value or []
+        return [str(item).strip() for item in items if str(item).strip()]

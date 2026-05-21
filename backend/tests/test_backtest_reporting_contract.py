@@ -22,6 +22,14 @@ def test_strategy_presets_expose_summary_and_parameter_help_metadata() -> None:
     assert ma_cross["executionMetadata"]["engine"] == "akquant"
     assert ma_cross["executionMetadata"]["fillPolicies"][0]["priceBasis"] == "close"
 
+    event_momentum = next(
+        item for item in payload["items"] if item["id"] == "event_theme_momentum"
+    )
+    assert event_momentum["summary"]
+    assert "prediction" in event_momentum["useCase"].lower()
+    assert event_momentum["parameterSchema"][0]["group"] == "event"
+    assert event_momentum["executionMetadata"]["engine"] == "akquant"
+
 
 def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_stats() -> None:
     index = pd.date_range("2025-01-02", periods=4, freq="D", tz="Asia/Shanghai")

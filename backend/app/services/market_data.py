@@ -6,6 +6,8 @@ import akshare as ak
 import pandas as pd
 import requests
 
+from .runtime_cache import TTLCache
+
 
 def _safe_float(value: Any) -> float | None:
     try:
@@ -22,10 +24,14 @@ class AkshareMarketDataService:
         akshare_client: Any | None = None,
         session: requests.Session | None = None,
         timeout: int = 10,
+        cache_ttl_seconds: int = 300,
+        retry_attempts: int = 2,
     ) -> None:
         self.akshare_client = akshare_client or ak
         self.session = session or requests.Session()
         self.timeout = timeout
+        self.retry_attempts = max(1, retry_attempts)
+        self._cache: TTLCache[tuple[Any, ...], dict[str, Any]] = TTLCache(cache_ttl_seconds)
 
     def get_market_overview(self) -> dict[str, Any]:
         source_details = self._get_source_details()
@@ -41,17 +47,47 @@ class AkshareMarketDataService:
 
     def get_quotes(self, symbols: list[str]) -> dict[str, Any]:
         normalized_symbols = [symbol.strip() for symbol in symbols if symbol.strip()]
+        cache_key = ("quotes", tuple(normalized_symbols))
         try:
             dataframe = self.akshare_client.stock_zh_a_spot_em()
             items = self._normalize_quote_rows(dataframe, normalized_symbols)
-            source = "akshare"
-        except Exception:
-            items = self._fetch_quotes_from_eastmoney(normalized_symbols)
-            source = "eastmoney_direct"
+            payload = {
+                "source": "akshare",
+                "degraded": False,
+                "warnings": [],
+                "items": items,
+            }
+        except Exception as primary_error:
+            try:
+                items = self._fetch_quotes_from_eastmoney(normalized_symbols)
+                warning = (
+                    "akshare quote source unavailable; using eastmoney_direct: "
+                    f"{_format_error(primary_error)}"
+                )
+                payload = {
+                    "source": "eastmoney_direct",
+                    "degraded": True,
+                    "warnings": [warning],
+                    "items": items,
+                }
+            except Exception as fallback_error:
+                cached = self._cache.get(cache_key)
+                if cached is None:
+                    raise
+                warning = (
+                    "quote refresh failed; using cached market data: "
+                    f"{_format_error(fallback_error)}"
+                )
+                return self._as_degraded_cache_payload(
+                    cached,
+                    warning,
+                )
 
-        return {"source": source, "items": items}
+        self._cache.set(cache_key, payload)
+        return payload
 
     def get_hot_sectors(self, limit: int = 5, sector_type: str = "concept") -> dict[str, Any]:
+        cache_key = ("sectors", sector_type, limit)
         try:
             dataframe = (
                 self.akshare_client.stock_board_industry_name_em()
@@ -59,16 +95,42 @@ class AkshareMarketDataService:
                 else self.akshare_client.stock_board_concept_name_em()
             )
             items = self._normalize_sector_rows(dataframe, sector_type, limit)
-            source = "akshare"
-        except Exception:
-            items = self._fetch_sectors_from_eastmoney(limit=limit, sector_type=sector_type)
-            source = "eastmoney_direct"
+            payload = {
+                "source": "akshare",
+                "degraded": False,
+                "warnings": [],
+                "sectorType": sector_type,
+                "items": items[:limit],
+            }
+        except Exception as primary_error:
+            try:
+                items = self._fetch_sectors_from_eastmoney(limit=limit, sector_type=sector_type)
+                warning = (
+                    "akshare sector source unavailable; using eastmoney_direct: "
+                    f"{_format_error(primary_error)}"
+                )
+                payload = {
+                    "source": "eastmoney_direct",
+                    "degraded": True,
+                    "warnings": [warning],
+                    "sectorType": sector_type,
+                    "items": items[:limit],
+                }
+            except Exception as fallback_error:
+                cached = self._cache.get(cache_key)
+                if cached is None:
+                    raise
+                warning = (
+                    "sector refresh failed; using cached market data: "
+                    f"{_format_error(fallback_error)}"
+                )
+                return self._as_degraded_cache_payload(
+                    cached,
+                    warning,
+                )
 
-        return {
-            "source": source,
-            "sectorType": sector_type,
-            "items": items[:limit],
-        }
+        self._cache.set(cache_key, payload)
+        return payload
 
     def list_sector_catalog(self) -> list[dict[str, str]]:
         catalog: list[dict[str, str]] = []
@@ -179,12 +241,10 @@ class AkshareMarketDataService:
             "fs": "m:0 t:6,m:0 t:80,m:1 t:2,m:1 t:23,m:0 t:81 s:2048",
             "fields": "f12,f14,f2,f3,f4,f5,f6,f15,f16,f17,f18",
         }
-        response = self.session.get(
+        payload = self._get_json_with_retries(
             "https://push2.eastmoney.com/api/qt/clist/get",
             params=params,
-            timeout=self.timeout,
         )
-        payload = response.json()
         rows = (payload.get("data") or {}).get("diff") or []
 
         items: list[dict[str, Any]] = []
@@ -222,12 +282,10 @@ class AkshareMarketDataService:
             "fs": "m:90 t:2" if sector_type == "industry" else "m:90 t:3",
             "fields": "f12,f14,f3,f128,f136",
         }
-        response = self.session.get(
+        payload = self._get_json_with_retries(
             "https://push2.eastmoney.com/api/qt/clist/get",
             params=params,
-            timeout=self.timeout,
         )
-        payload = response.json()
         rows = (payload.get("data") or {}).get("diff") or []
 
         items: list[dict[str, Any]] = []
@@ -244,3 +302,30 @@ class AkshareMarketDataService:
                 }
             )
         return items
+
+    def _get_json_with_retries(self, url: str, params: dict[str, Any]) -> dict[str, Any]:
+        last_error: Exception | None = None
+        for _ in range(self.retry_attempts):
+            try:
+                response = self.session.get(url, params=params, timeout=self.timeout)
+                response.raise_for_status()
+                return response.json()
+            except Exception as error:  # noqa: PERF203
+                last_error = error
+
+        raise RuntimeError(f"eastmoney request failed: {_format_error(last_error)}")
+
+    def _as_degraded_cache_payload(self, payload: dict[str, Any], warning: str) -> dict[str, Any]:
+        warnings = list(payload.get("warnings") or [])
+        warnings.append(warning)
+        return {
+            **payload,
+            "degraded": True,
+            "warnings": warnings,
+        }
+
+
+def _format_error(error: Exception | None) -> str:
+    if error is None:
+        return "unknown error"
+    return f"{error.__class__.__name__}: {error}"

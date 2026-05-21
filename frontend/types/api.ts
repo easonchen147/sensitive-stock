@@ -254,6 +254,8 @@ export type MarketQuote = {
 
 export type MarketQuotesResponse = {
   source: string;
+  degraded?: boolean;
+  warnings?: string[];
   items: MarketQuote[];
 };
 
@@ -270,6 +272,8 @@ export type MarketSector = {
 export type MarketSectorsResponse = {
   source: string;
   sectorType: string;
+  degraded?: boolean;
+  warnings?: string[];
   items: MarketSector[];
 };
 
@@ -286,9 +290,42 @@ export type MarketNewsItem = {
 
 export type MarketNewsResponse = {
   source: string;
+  primarySource?: string;
+  fallbackSources?: string[];
   requestedLimit: number;
   degraded: boolean;
+  warnings?: string[];
+  channels?: MarketNewsChannel[];
+  sourceCount?: number;
+  sourceQuality?: MarketNewsSourceQuality;
+  dedupeMetadata?: MarketNewsDedupeMetadata;
   items: MarketNewsItem[];
+};
+
+export type MarketNewsChannel = {
+  name: string;
+  source: string;
+  status: "ok" | "degraded" | "failed";
+  itemCount: number;
+  warnings?: string[];
+};
+
+export type MarketNewsSourceQuality = {
+  queriedChannels: number;
+  succeededChannels: number;
+  degradedChannels: number;
+  failedChannels: number;
+  totalItems: number;
+  uniqueItems: number;
+  duplicateItems: number;
+  sourceCoverage: string[];
+};
+
+export type MarketNewsDedupeMetadata = {
+  strategy: string;
+  originalCount: number;
+  uniqueCount: number;
+  duplicateCount: number;
 };
 
 export type MarketKeyword = {
@@ -307,6 +344,49 @@ export type MarketSectorHint = {
 export type MarketNewsIntelligenceResponse = MarketNewsResponse & {
   keywords: MarketKeyword[];
   sectorHints: MarketSectorHint[];
+};
+
+export type MarketPredictionMetadata = {
+  provider: string;
+  model: string;
+  degraded: boolean;
+  cached: boolean;
+  schemaVersion: string;
+  cacheKey: string;
+  inputDigest: string;
+  newsItemCount: number;
+  keywordCount: number;
+  sectorHintCount: number;
+  symbolCount: number;
+  latencyMs?: number;
+  warnings?: string[];
+};
+
+export type MarketPrediction = {
+  targetType: string;
+  target: string;
+  direction: "bullish" | "neutral" | "bearish";
+  confidence: number;
+  score: number;
+  horizon: string;
+  drivers: string[];
+  sourceIds: string[];
+};
+
+export type MarketPredictionBacktestHandoff = {
+  endpoint: string;
+  suggestedPreset: string;
+  symbols: string[];
+  defaultParams: Record<string, unknown>;
+  notes?: string[];
+};
+
+export type MarketNewsPredictionsResponse = MarketNewsIntelligenceResponse & {
+  predictionMetadata: MarketPredictionMetadata;
+  predictions: MarketPrediction[];
+  predictionSummary?: string;
+  riskNotes: string[];
+  backtestHandoff: MarketPredictionBacktestHandoff;
 };
 
 export type CapabilityMetadata = {

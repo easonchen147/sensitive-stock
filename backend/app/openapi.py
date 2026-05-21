@@ -246,6 +246,17 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 parameters=_query_parameters(MarketNewsQuery),
             )
         },
+        full("/market/news/predictions"): {
+            "get": _operation(
+                method="get",
+                path=full("/market/news/predictions"),
+                tag="market",
+                operation_id="getMarketNewsPredictions",
+                summary="Return multi-source market news predictions and backtest handoff.",
+                response_schema="#/components/schemas/MarketNewsPredictionsResponse",
+                parameters=_query_parameters(MarketNewsQuery),
+            )
+        },
         full("/backtests/presets"): {
             "get": _operation(
                 method="get",
@@ -482,6 +493,7 @@ def _build_components() -> dict[str, Any]:
                 "fallbackSources": {"type": "array", "items": {"type": "string"}},
                 "degraded": {"type": "boolean"},
                 "requestedLimit": {"type": "integer"},
+                "warnings": {"type": "array", "items": {"type": "string"}},
             },
             "additionalProperties": True,
         },
@@ -560,6 +572,12 @@ def _build_components() -> dict[str, Any]:
                     "type": "object",
                     "required": ["source", "requestedLimit", "degraded", "items"],
                     "properties": {
+                        "sourceQuality": {
+                            "$ref": "#/components/schemas/MarketNewsSourceQuality"
+                        },
+                        "dedupeMetadata": {
+                            "$ref": "#/components/schemas/MarketNewsDedupeMetadata"
+                        },
                         "items": {
                             "type": "array",
                             "items": {"$ref": "#/components/schemas/MarketNewsItem"},
@@ -567,6 +585,41 @@ def _build_components() -> dict[str, Any]:
                     },
                 },
             ]
+        },
+        "MarketNewsSourceQuality": {
+            "type": "object",
+            "required": [
+                "queriedChannels",
+                "succeededChannels",
+                "degradedChannels",
+                "failedChannels",
+                "totalItems",
+                "uniqueItems",
+                "duplicateItems",
+                "sourceCoverage",
+            ],
+            "properties": {
+                "queriedChannels": {"type": "integer"},
+                "succeededChannels": {"type": "integer"},
+                "degradedChannels": {"type": "integer"},
+                "failedChannels": {"type": "integer"},
+                "totalItems": {"type": "integer"},
+                "uniqueItems": {"type": "integer"},
+                "duplicateItems": {"type": "integer"},
+                "sourceCoverage": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": False,
+        },
+        "MarketNewsDedupeMetadata": {
+            "type": "object",
+            "required": ["strategy", "originalCount", "uniqueCount", "duplicateCount"],
+            "properties": {
+                "strategy": {"type": "string"},
+                "originalCount": {"type": "integer"},
+                "uniqueCount": {"type": "integer"},
+                "duplicateCount": {"type": "integer"},
+            },
+            "additionalProperties": False,
         },
         "MarketNewsItem": {
             "type": "object",
@@ -578,6 +631,18 @@ def _build_components() -> dict[str, Any]:
                 "content": {"type": "string"},
                 "important": {"type": "boolean"},
                 "tags": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": True,
+        },
+        "MarketNewsChannel": {
+            "type": "object",
+            "required": ["name", "source", "status", "itemCount"],
+            "properties": {
+                "name": {"type": "string"},
+                "source": {"type": "string"},
+                "status": {"type": "string", "enum": ["ok", "degraded", "failed"]},
+                "itemCount": {"type": "integer"},
+                "warnings": {"type": "array", "items": {"type": "string"}},
             },
             "additionalProperties": True,
         },
@@ -602,6 +667,111 @@ def _build_components() -> dict[str, Any]:
                                 "additionalProperties": True,
                             },
                         },
+                    },
+                },
+            ]
+        },
+        "MarketPredictionMetadata": {
+            "type": "object",
+            "required": [
+                "provider",
+                "model",
+                "degraded",
+                "cached",
+                "schemaVersion",
+                "cacheKey",
+                "inputDigest",
+                "newsItemCount",
+                "keywordCount",
+                "sectorHintCount",
+                "symbolCount",
+            ],
+            "properties": {
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "degraded": {"type": "boolean"},
+                "cached": {"type": "boolean"},
+                "schemaVersion": {"type": "string"},
+                "cacheKey": {"type": "string"},
+                "inputDigest": {"type": "string"},
+                "newsItemCount": {"type": "integer"},
+                "keywordCount": {"type": "integer"},
+                "sectorHintCount": {"type": "integer"},
+                "symbolCount": {"type": "integer"},
+                "latencyMs": {"type": "integer"},
+                "warnings": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": True,
+        },
+        "MarketPrediction": {
+            "type": "object",
+            "required": [
+                "targetType",
+                "target",
+                "direction",
+                "confidence",
+                "score",
+                "horizon",
+                "drivers",
+                "sourceIds",
+            ],
+            "properties": {
+                "targetType": {"type": "string"},
+                "target": {"type": "string"},
+                "direction": {"type": "string", "enum": ["bullish", "neutral", "bearish"]},
+                "confidence": {"type": "number"},
+                "score": {"type": "number"},
+                "horizon": {"type": "string"},
+                "drivers": {"type": "array", "items": {"type": "string"}},
+                "sourceIds": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": True,
+        },
+        "BacktestHandoff": {
+            "type": "object",
+            "required": ["endpoint", "suggestedPreset", "symbols", "defaultParams"],
+            "properties": {
+                "endpoint": {"type": "string"},
+                "suggestedPreset": {"type": "string"},
+                "symbols": {"type": "array", "items": {"type": "string"}},
+                "defaultParams": {"type": "object", "additionalProperties": True},
+                "notes": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": True,
+        },
+        "MarketNewsPredictionsResponse": {
+            "allOf": [
+                {"$ref": "#/components/schemas/MarketNewsIntelligenceResponse"},
+                {
+                    "type": "object",
+                    "required": [
+                        "channels",
+                        "predictionMetadata",
+                        "predictions",
+                        "riskNotes",
+                        "backtestHandoff",
+                    ],
+                    "properties": {
+                        "channels": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/MarketNewsChannel"},
+                        },
+                        "sourceQuality": {
+                            "$ref": "#/components/schemas/MarketNewsSourceQuality"
+                        },
+                        "dedupeMetadata": {
+                            "$ref": "#/components/schemas/MarketNewsDedupeMetadata"
+                        },
+                        "predictionMetadata": {
+                            "$ref": "#/components/schemas/MarketPredictionMetadata"
+                        },
+                        "predictions": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/MarketPrediction"},
+                        },
+                        "predictionSummary": {"type": "string"},
+                        "riskNotes": {"type": "array", "items": {"type": "string"}},
+                        "backtestHandoff": {"$ref": "#/components/schemas/BacktestHandoff"},
                     },
                 },
             ]

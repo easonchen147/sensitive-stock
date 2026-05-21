@@ -1,4 +1,4 @@
-# backtest-execution-and-reporting Specification
+﻿# backtest-execution-and-reporting Specification
 
 ## Purpose
 Define the AKQuant-backed backtest workbench contract, preset catalog, single-symbol A-share ledger execution rules, and structured reporting format shared by the backend and frontend.
@@ -50,3 +50,16 @@ The system SHALL return a normalized response organized around execution assumpt
 #### Scenario: Client needs richer execution interpretation
 - **WHEN** a backtest run completes successfully through AKQuant
 - **THEN** each symbol result includes explicit assumption and insight sections plus richer trade statistics so the frontend can explain what happened instead of only showing raw returns
+
+### Requirement: Backtest preset catalog SHALL include event prediction validation
+The AKQuant-backed backtest preset catalog SHALL include a prediction-validation
+preset that helps users test event or theme momentum after market-news
+predictions identify candidate sectors or symbols.
+
+#### Scenario: Client requests preset catalog after prediction integration
+- **WHEN** a client requests backtest presets
+- **THEN** the catalog includes an `event_theme_momentum` preset with summary, use case, risk notes, default params, and grouped parameter schema
+
+#### Scenario: Prediction response includes backtest handoff
+- **WHEN** market-news prediction returns candidate symbols or themes
+- **THEN** the response includes a handoff object pointing to the backtest run endpoint and the prediction-validation preset

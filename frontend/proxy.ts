@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { ACCESS_TOKEN_COOKIE_NAME, buildLoginRedirectPath, isProtectedAppPath } from "@/lib/auth";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!isProtectedAppPath(pathname)) {
     return NextResponse.next();

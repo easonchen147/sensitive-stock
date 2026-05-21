@@ -57,6 +57,23 @@ BREAKOUT_CHANNEL_CODE = """def generate_signals(data, ctx):
 """
 
 
+EVENT_THEME_MOMENTUM_CODE = """def generate_signals(data, ctx):
+    lookback_window = int(ctx.params.get("lookback_window", 20))
+    volume_window = int(ctx.params.get("volume_window", 5))
+    volume_multiplier = float(ctx.params.get("volume_multiplier", 1.2))
+
+    close = data["close"]
+    high_breakout = close > data["high"].rolling(lookback_window).max().shift(1)
+    volume_trend = data["volume"] > data["volume"].rolling(volume_window).mean() * volume_multiplier
+    exit_line = close < close.rolling(max(5, lookback_window // 2)).mean()
+
+    signal = ctx.new_signal()
+    signal[high_breakout & volume_trend] = 1
+    signal[exit_line] = 0
+    return signal.ffill().fillna(0)
+"""
+
+
 PRESETS: dict[str, StrategyPreset] = {
     "ma_cross": StrategyPreset(
         id="ma_cross",
@@ -158,6 +175,64 @@ PRESETS: dict[str, StrategyPreset] = {
                 "max": 120,
                 "step": 1,
             }
+        ],
+    ),
+    "event_theme_momentum": StrategyPreset(
+        id="event_theme_momentum",
+        label="Event theme momentum",
+        description="Validate news-predicted themes with breakout and volume confirmation.",
+        summary=(
+            "Uses recent high breakout plus volume confirmation to test whether a "
+            "news-driven candidate has follow-through."
+        ),
+        use_case=(
+            "Designed for symbols or sectors surfaced by the market-news prediction endpoint; "
+            "use it as validation context after a theme is detected."
+        ),
+        risk_notes=(
+            "Event-driven breakouts can reverse quickly after news fades. Review drawdown, "
+            "turnover, and costs before trusting any prediction."
+        ),
+        code=EVENT_THEME_MOMENTUM_CODE,
+        default_params={
+            "lookback_window": 20,
+            "volume_window": 5,
+            "volume_multiplier": 1.2,
+        },
+        parameter_schema=[
+            {
+                "name": "lookback_window",
+                "label": "Lookback window",
+                "type": "number",
+                "group": "event",
+                "helpText": "Higher values require stronger price breakout confirmation.",
+                "default": 20,
+                "min": 5,
+                "max": 120,
+                "step": 1,
+            },
+            {
+                "name": "volume_window",
+                "label": "Volume window",
+                "type": "number",
+                "group": "event",
+                "helpText": "Short rolling window used to judge whether event volume is elevated.",
+                "default": 5,
+                "min": 2,
+                "max": 30,
+                "step": 1,
+            },
+            {
+                "name": "volume_multiplier",
+                "label": "Volume multiplier",
+                "type": "number",
+                "group": "event",
+                "helpText": "Volume must exceed the rolling average by this multiple.",
+                "default": 1.2,
+                "min": 1,
+                "max": 5,
+                "step": 0.1,
+            },
         ],
     ),
 }

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   getMarketNews,
   getMarketNewsIntelligence,
+  getMarketNewsPredictions,
   getMarketOverview,
   getMarketQuotes,
   getMarketSectors,
@@ -13,6 +14,7 @@ import { StateSurface } from "@/components/workbench-layout";
 import { parseSymbolsInput } from "@/lib/backtests";
 import type {
   MarketNewsIntelligenceResponse,
+  MarketNewsPredictionsResponse,
   MarketNewsResponse,
   MarketOverview,
   MarketQuotesResponse,
@@ -29,6 +31,7 @@ type MarketWorkbenchData = {
   sectors: MarketSectorsResponse | null;
   news: MarketNewsResponse | null;
   intelligence: MarketNewsIntelligenceResponse | null;
+  predictions: MarketNewsPredictionsResponse | null;
 };
 
 const INITIAL_DATA: MarketWorkbenchData = {
@@ -37,6 +40,7 @@ const INITIAL_DATA: MarketWorkbenchData = {
   sectors: null,
   news: null,
   intelligence: null,
+  predictions: null,
 };
 
 export function MarketWorkbench() {
@@ -55,13 +59,21 @@ export function MarketWorkbench() {
     setError("");
     setNotice("");
 
-    const [overviewResult, quotesResult, sectorsResult, newsResult, intelligenceResult] =
+    const [
+      overviewResult,
+      quotesResult,
+      sectorsResult,
+      newsResult,
+      intelligenceResult,
+      predictionsResult,
+    ] =
       await Promise.allSettled([
         getMarketOverview(),
         getMarketQuotes(normalizedSymbols),
         getMarketSectors(nextSectorType, 8),
         getMarketNews(10),
         getMarketNewsIntelligence(60),
+        getMarketNewsPredictions(60, normalizedSymbols),
       ]);
 
     const nextData: MarketWorkbenchData = { ...INITIAL_DATA };
@@ -104,9 +116,18 @@ export function MarketWorkbench() {
       errors.push("新闻 intelligence 加载失败");
     }
 
+    if (predictionsResult.status === "fulfilled") {
+      nextData.predictions = predictionsResult.value;
+      if (predictionsResult.value.predictionMetadata.degraded) {
+        notices.push("预测结果来自本地启发式或降级模型路径。");
+      }
+    } else {
+      errors.push("新闻预测加载失败");
+    }
+
     setData(nextData);
     setError(
-      errors.length === 5
+      errors.length === 6
         ? "市场页所有请求都失败了，请确认 backend 是否启动，或稍后重试。"
         : errors.join(" / "),
     );
@@ -123,6 +144,10 @@ export function MarketWorkbench() {
   const newsItems = data.news?.items || [];
   const keywords = data.intelligence?.keywords || [];
   const sectorHints = data.intelligence?.sectorHints || [];
+  const predictionRows = data.predictions?.predictions || [];
+  const channels = data.predictions?.channels || data.news?.channels || [];
+  const sourceQuality = data.predictions?.sourceQuality || data.news?.sourceQuality;
+  const dedupeMetadata = data.predictions?.dedupeMetadata || data.news?.dedupeMetadata;
 
   return (
     <section className="stack">
@@ -195,6 +220,17 @@ export function MarketWorkbench() {
             value={data.news?.source || "N/A"}
             note={data.news?.degraded ? "degraded" : "latest feed"}
           />
+          <MetricCard
+            label="Prediction"
+            value={data.predictions?.predictionMetadata.provider || "N/A"}
+            note={
+              data.predictions
+                ? `${data.predictions.predictionMetadata.model} / ${
+                    data.predictions.predictionMetadata.cached ? "cached" : "fresh"
+                  }`
+                : "no model"
+            }
+          />
         </div>
       </article>
 
@@ -262,7 +298,37 @@ export function MarketWorkbench() {
       <section className="dashboard-grid">
         <article className="panel">
           <div className="eyebrow">Latest News</div>
-          <h2 className="panel-title">Jin10 快讯</h2>
+          <h2 className="panel-title">多源市场快讯</h2>
+          {channels.length ? (
+            <div className="tag-row">
+              {channels.map((channel) => (
+                <span className="tag-chip" key={`${channel.source}-${channel.status}`}>
+                  {channel.name}: {channel.status} · {channel.itemCount}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {sourceQuality || dedupeMetadata ? (
+            <div className="metric-grid">
+              <MetricCard
+                label="Source Coverage"
+                value={`${sourceQuality?.succeededChannels ?? 0}/${sourceQuality?.queriedChannels ?? 0}`}
+                note={`failed ${sourceQuality?.failedChannels ?? 0} / degraded ${
+                  sourceQuality?.degradedChannels ?? 0
+                }`}
+              />
+              <MetricCard
+                label="Unique News"
+                value={`${sourceQuality?.uniqueItems ?? newsItems.length}`}
+                note={`${sourceQuality?.totalItems ?? newsItems.length} raw items`}
+              />
+              <MetricCard
+                label="Duplicates"
+                value={`${dedupeMetadata?.duplicateCount ?? sourceQuality?.duplicateItems ?? 0}`}
+                note={dedupeMetadata?.strategy || "source metadata unavailable"}
+              />
+            </div>
+          ) : null}
           <div className="news-list">
             {newsItems.length ? (
               newsItems.slice(0, 8).map((item) => (
@@ -328,6 +394,95 @@ export function MarketWorkbench() {
           </div>
         </article>
       </section>
+
+      <article className="panel">
+        <div className="panel-header">
+          <div>
+            <div className="eyebrow">DeepSeek Prediction Loop</div>
+            <h2 className="panel-title">多源资讯预测与回测交接</h2>
+            <p className="panel-subtitle">
+              backend 会优先使用 DeepSeek V4 Flash；未配置 key 或模型失败时会明确降级到本地启发式预测，并给出 AKQuant 回测交接参数。
+            </p>
+          </div>
+        </div>
+
+        {data.predictions ? (
+          <>
+            <div className="metric-grid">
+              <MetricCard
+                label="Provider"
+                value={data.predictions.predictionMetadata.provider}
+                note={data.predictions.predictionMetadata.degraded ? "degraded" : "remote model"}
+              />
+              <MetricCard
+                label="Model"
+                value={data.predictions.predictionMetadata.model}
+                note={data.predictions.predictionSummary || "structured prediction"}
+              />
+              <MetricCard
+                label="Schema"
+                value={data.predictions.predictionMetadata.schemaVersion}
+                note={`input ${data.predictions.predictionMetadata.inputDigest}`}
+              />
+              <MetricCard
+                label="Context"
+                value={`${data.predictions.predictionMetadata.newsItemCount} news`}
+                note={`${data.predictions.predictionMetadata.keywordCount} keywords / ${
+                  data.predictions.predictionMetadata.sectorHintCount
+                } sector hints`}
+              />
+              <MetricCard
+                label="Backtest Preset"
+                value={data.predictions.backtestHandoff.suggestedPreset}
+                note={data.predictions.backtestHandoff.endpoint}
+              />
+            </div>
+
+            {data.predictions.predictionMetadata.warnings?.length ? (
+              <StateSurface
+                state="degraded"
+                title="Prediction path is degraded."
+                detail={data.predictions.predictionMetadata.warnings.join(" / ")}
+              />
+            ) : null}
+
+            <div className="status-list">
+              {predictionRows.length ? (
+                predictionRows.slice(0, 6).map((item) => (
+                  <div className="status-item" data-status="migrated" key={`${item.targetType}-${item.target}`}>
+                    <div className="status-head">
+                      <strong>{item.target}</strong>
+                      <span className="status-pill">
+                        {item.direction} · {(item.confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                    <p>
+                      {item.horizon} · score {item.score} · drivers {item.drivers.join(" / ")}
+                    </p>
+                    {item.sourceIds.length ? (
+                      <div className="tag-row">
+                        {item.sourceIds.slice(0, 4).map((sourceId) => (
+                          <span className="tag-chip" key={`${item.target}-${sourceId}`}>
+                            evidence {sourceId}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <StateSurface state="empty" title="暂无预测结果。" />
+              )}
+            </div>
+
+            <div className="banner banner-warning">
+              {data.predictions.riskNotes.join(" / ")}
+            </div>
+          </>
+        ) : (
+          <StateSurface state="empty" title="暂无预测结果。" />
+        )}
+      </article>
     </section>
   );
 }

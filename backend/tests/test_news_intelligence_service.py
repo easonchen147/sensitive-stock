@@ -27,10 +27,12 @@ class FakeSession:
         flash_pages: list[list[dict]] | None = None,
         js_items: list[dict] | None = None,
         fail_flash: bool = False,
+        fail_public: bool = False,
     ) -> None:
         self.flash_pages = flash_pages or []
         self.js_items = js_items or []
         self.fail_flash = fail_flash
+        self.fail_public = fail_public
         self.calls: list[tuple[str, dict | None]] = []
         self.page_index = 0
 
@@ -50,6 +52,8 @@ class FakeSession:
             return FakeResponse({"status": 200, "message": "OK", "data": page})
 
         if "flash_newest.js" in url:
+            if self.fail_public:
+                raise RuntimeError("public feed unavailable")
             payload_text = json.dumps(self.js_items, ensure_ascii=False)
             return FakeResponse(text=f"var newest = {payload_text};")
 

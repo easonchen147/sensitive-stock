@@ -20,6 +20,7 @@ EXPECTED_FORMAL_PATHS = {
     "/api/v1/market/sectors",
     "/api/v1/market/news",
     "/api/v1/market/news/intelligence",
+    "/api/v1/market/news/predictions",
     "/api/v1/backtests/presets",
     "/api/v1/backtests/run",
     "/api/v1/screener",
@@ -80,6 +81,12 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
     assert "FactorAnalysisRequest" in schemas
     assert "PortfolioOptimizationRequest" in schemas
     assert "MarketQuotesResponse" in schemas
+    assert "MarketNewsPredictionsResponse" in schemas
+    assert "MarketPrediction" in schemas
+    assert "MarketPredictionMetadata" in schemas
+    assert "MarketNewsSourceQuality" in schemas
+    assert "MarketNewsDedupeMetadata" in schemas
+    assert "BacktestHandoff" in schemas
     assert "ScreenerRunResponse" in schemas
     assert "DiagnosisRunResponse" in schemas
 
@@ -90,6 +97,17 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
             "application/json"
         ]["schema"]["$ref"]
         == "#/components/schemas/BacktestRunRequest"
+    )
+
+    prediction_metadata = schemas["MarketPredictionMetadata"]
+    assert "schemaVersion" in prediction_metadata["required"]
+    assert "cached" in prediction_metadata["required"]
+    assert "inputDigest" in prediction_metadata["required"]
+    assert (
+        schemas["MarketNewsPredictionsResponse"]["allOf"][1]["properties"]["sourceQuality"][
+            "$ref"
+        ]
+        == "#/components/schemas/MarketNewsSourceQuality"
     )
 
 
