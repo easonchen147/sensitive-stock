@@ -39,6 +39,12 @@ export type AuthLoginResponse = {
 export type StrategyMode = "preset" | "custom";
 export type ExecutionMode = "close" | "next_open";
 
+export type BacktestFillPolicy = {
+  priceBasis: "open" | "close";
+  barOffset: 0 | 1;
+  temporal: "same_cycle" | "next_event";
+};
+
 export type BacktestSeriesPoint = {
   date: string;
   value: number;
@@ -107,6 +113,9 @@ export type BacktestSettings = {
   stopLoss: number;
   takeProfit: number;
   initialCapital?: number;
+  engine?: "akquant";
+  engineVersion?: string;
+  fillPolicy?: BacktestFillPolicy;
   primarySource?: string;
   fallbackSources?: string[];
 };
@@ -197,6 +206,15 @@ export type BacktestPresetParameter = {
   options?: Array<{ label: string; value: string }>;
 };
 
+export type BacktestPresetExecutionMetadata = {
+  engine: "akquant";
+  engineVersion: string;
+  runtimeAdapter: string;
+  supportedModes: ExecutionMode[];
+  fillPolicies: Array<BacktestFillPolicy & { mode: ExecutionMode }>;
+  supportsRiskControls: boolean;
+};
+
 export type BacktestPreset = {
   id: string;
   label: string;
@@ -206,6 +224,7 @@ export type BacktestPreset = {
   riskNotes: string;
   defaultParams: Record<string, unknown>;
   parameterSchema: BacktestPresetParameter[];
+  executionMetadata?: BacktestPresetExecutionMetadata;
   code: string;
 };
 
@@ -288,4 +307,123 @@ export type MarketSectorHint = {
 export type MarketNewsIntelligenceResponse = MarketNewsResponse & {
   keywords: MarketKeyword[];
   sectorHints: MarketSectorHint[];
+};
+
+export type CapabilityMetadata = {
+  source: string;
+  degraded: boolean;
+  warnings?: string[];
+  unavailableInputs?: string[];
+  [key: string]: unknown;
+};
+
+export type ScreenerFilters = {
+  minPrice?: number;
+  maxPrice?: number;
+  minChangePercent?: number;
+  maxChangePercent?: number;
+  sectors?: string[];
+};
+
+export type ScreenerRunPayload = {
+  universe: string[];
+  prompt?: string;
+  filters: ScreenerFilters;
+  sortBy?: "score" | "price" | "changePercent";
+  limit?: number;
+  backtestStartDate?: string;
+  backtestEndDate?: string;
+};
+
+export type ScreenerCandidate = {
+  symbol: string;
+  name: string;
+  price: number;
+  changePercent: number;
+  score: number;
+  matchedRules: string[];
+  factorSummary: Record<string, number>;
+};
+
+export type ScreenerRunResponse = {
+  items: ScreenerCandidate[];
+  summary: Record<string, unknown>;
+  appliedFilters: ScreenerFilters;
+  interpretedPrompt: string;
+  exportRows: Array<Record<string, unknown>>;
+  backtestHandoff: {
+    endpoint: string;
+    payload: BacktestRunPayload;
+  };
+  metadata: CapabilityMetadata;
+};
+
+export type ScreenerOverviewResponse = {
+  status: "migrated";
+  templates: Array<Record<string, unknown>>;
+  metadata: CapabilityMetadata;
+};
+
+export type ScreenerExportResponse = {
+  format: "json" | "csv";
+  columns: string[];
+  rows: Array<Record<string, unknown>>;
+  metadata: CapabilityMetadata;
+};
+
+export type DiagnosisPayload = {
+  symbol: string;
+  startDate: string;
+  endDate: string;
+  includeNews?: boolean;
+};
+
+export type DiagnosisSection = {
+  title: string;
+  tone: "positive" | "neutral" | "warning";
+  summary: string;
+};
+
+export type DiagnosisResponse = {
+  symbol: string;
+  name: string;
+  marketContext: Record<string, unknown>;
+  indicators: Array<Record<string, unknown>>;
+  sections: DiagnosisSection[];
+  riskNotes: string[];
+  metadata: CapabilityMetadata;
+};
+
+export type FactorAnalysisPayload = {
+  symbol: string;
+  startDate: string;
+  endDate: string;
+  factors?: string[];
+  forwardDays?: number;
+  topN?: number;
+};
+
+export type FactorAnalysisResponse = {
+  symbol: string;
+  window: Record<string, unknown>;
+  latestFactors: Record<string, number>;
+  rankedFactors: Array<{ name: string; ic: number; absIc: number }>;
+  summary: Record<string, unknown>;
+  metadata: CapabilityMetadata;
+};
+
+export type PortfolioOptimizationPayload = {
+  symbols: string[];
+  startDate: string;
+  endDate: string;
+  objective: "equal_weight" | "minimum_variance" | "maximum_sharpe" | "risk_parity";
+  riskFreeRate?: number;
+};
+
+export type PortfolioOptimizationResponse = {
+  objective: string;
+  window: Record<string, unknown>;
+  allocations: Array<{ symbol: string; weight: number }>;
+  statistics: Record<string, number>;
+  metadata: CapabilityMetadata;
 };

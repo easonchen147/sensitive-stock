@@ -1,7 +1,7 @@
 # token-auth-access-control Specification
 
 ## Purpose
-TBD - created by archiving change add-admin-token-auth. Update Purpose after archive.
+Define the internal MVP administrator authentication boundary, signed bearer-token access model, and reusable OpenAPI security declaration for protected backend APIs.
 ## Requirements
 ### Requirement: MVP admin login SHALL authenticate a single built-in administrator
 The system SHALL expose a login flow that authenticates exactly one built-in administrator account for internal MVP use, and SHALL reject all other credential combinations.
@@ -32,3 +32,13 @@ The system SHALL keep registration and broader account-management concerns out o
 - **WHEN** a client inspects the auth surface introduced by this change
 - **THEN** the system exposes no registration, password-reset, or multi-user management flow and documents the fixed admin-account boundary as MVP-only
 
+### Requirement: Token authentication SHALL be described as a reusable OpenAPI security scheme
+The system SHALL publish the bearer-token authentication model as a reusable OpenAPI security scheme and apply it consistently to protected backend operations.
+
+#### Scenario: Client inspects a protected operation in OpenAPI
+- **WHEN** a client reads the published OpenAPI document for a protected backend operation
+- **THEN** the operation references the shared bearer-token security scheme rather than restating an ad hoc auth contract
+
+#### Scenario: Client inspects a public allowlist operation in OpenAPI
+- **WHEN** a client reads the published OpenAPI document for a public allowlist route such as login or health
+- **THEN** the operation is marked as not requiring the shared bearer-token security scheme

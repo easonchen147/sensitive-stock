@@ -16,7 +16,14 @@ class StubBacktestService:
                     "symbol": "000001",
                     "settings": {
                         "benchmarkSymbol": "159919",
+                        "engine": "akquant",
+                        "engineVersion": "0.2.37",
                         "executionMode": "next_open",
+                        "fillPolicy": {
+                            "priceBasis": "open",
+                            "barOffset": 1,
+                            "temporal": "same_cycle",
+                        },
                         "positionSize": 0.9,
                     },
                     "metrics": {
@@ -80,8 +87,23 @@ class StubBacktestService:
                 {
                     "id": "ma_cross",
                     "label": "双均线策略",
-                    "description": "AKQuant-inspired moving average crossover preset.",
+                    "description": "AKQuant-backed moving average crossover preset.",
                     "defaultParams": {"fast_window": 5, "slow_window": 20},
+                    "executionMetadata": {
+                        "engine": "akquant",
+                        "engineVersion": "0.2.37",
+                        "runtimeAdapter": "signal_replay",
+                        "supportedModes": ["close", "next_open"],
+                        "fillPolicies": [
+                            {
+                                "mode": "close",
+                                "priceBasis": "close",
+                                "barOffset": 0,
+                                "temporal": "same_cycle",
+                            }
+                        ],
+                        "supportsRiskControls": True,
+                    },
                     "parameterSchema": [
                         {
                             "name": "fast_window",

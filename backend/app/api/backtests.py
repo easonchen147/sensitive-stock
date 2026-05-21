@@ -3,13 +3,13 @@ from __future__ import annotations
 from flask import Blueprint, current_app, jsonify, request
 
 from ..schemas.backtests import BacktestRunRequest
-from ..services.backtests import LegacyBacktestService
+from ..services.backtests import AKQuantBacktestService
 
 blueprint = Blueprint("backtests", __name__)
 
 
 def _get_backtest_service():
-    factory = current_app.config.get("BACKTEST_SERVICE_FACTORY") or LegacyBacktestService
+    factory = current_app.config.get("BACKTEST_SERVICE_FACTORY") or AKQuantBacktestService
     return factory() if callable(factory) else factory
 
 

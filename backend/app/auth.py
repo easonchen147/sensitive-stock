@@ -8,6 +8,7 @@ from .services.auth import AuthService, AuthTokenError
 PUBLIC_ENDPOINTS = {
     "auth.login",
     "health.health",
+    "openapi.openapi_json",
 }
 
 

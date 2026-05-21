@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { getBacktestPresets, runBacktests } from "@/lib/api";
+import { StateSurface } from "@/components/workbench-layout";
 import {
   applyQuickProfile,
   BACKTEST_QUICK_PROFILES,
@@ -180,11 +181,13 @@ export function BacktestConsole() {
             </div>
           </div>
 
-          {error ? <div className="banner banner-warning">{error}</div> : null}
+          {error ? <StateSurface state="error" title="Backtest request needs attention." detail={error} /> : null}
           {result && !error ? (
-            <div className="banner banner-success">
-              已返回 {result.results.length} 个标的结果，失败 {result.failures.length} 个。
-            </div>
+            <StateSurface
+              state="ready"
+              title="Backtest response is ready."
+              detail={`已返回 ${result.results.length} 个标的结果，失败 ${result.failures.length} 个。`}
+            />
           ) : null}
 
           <div className="pill-row">
@@ -504,7 +507,7 @@ export function BacktestConsole() {
 
             <div className="submit-row">
               <div className="submit-note">
-                backend 会先校验 schema，再执行 legacy pipeline。前端会保留输入，不会在失败时清空表单。
+                backend 会先校验 schema，再通过 AKQuant runtime adapter 执行回测。前端会保留输入，不会在失败时清空表单。
               </div>
               <button className="primary-button" disabled={loading} type="submit">
                 {loading ? "Running" : "Run Backtests"}
@@ -545,6 +548,15 @@ export function BacktestConsole() {
                   <span className="status-pill">{currentPreset.label}</span>
                 </div>
                 <p>{currentPreset.summary}</p>
+                {currentPreset.executionMetadata ? (
+                  <p>
+                    {currentPreset.executionMetadata.engine} {currentPreset.executionMetadata.engineVersion}
+                    {" · "}
+                    {currentPreset.executionMetadata.fillPolicies
+                      .map((item) => `${item.mode}:${item.priceBasis}/${item.temporal}`)
+                      .join(" · ")}
+                  </p>
+                ) : null}
               </div>
               <div className="status-item" data-status="migrated">
                 <div className="status-head">
@@ -577,13 +589,15 @@ export function BacktestConsole() {
         </div>
 
         {loading ? (
-          <div className="empty-state">正在提交回测请求并等待结果返回。</div>
+          <StateSurface state="loading" title="正在提交回测请求并等待结果返回。" />
         ) : result ? (
           <BacktestResults result={result} />
         ) : (
-          <div className="empty-state">
-            还没有回测结果。先配置策略与执行假设，提交后这里会展示多标的结果卡、假设摘要、relative benchmark insight 和最近成交记录。
-          </div>
+          <StateSurface
+            state="empty"
+            title="还没有回测结果。"
+            detail="先配置策略与执行假设，提交后这里会展示多标的结果卡、假设摘要、relative benchmark insight 和最近成交记录。"
+          />
         )}
       </article>
     </section>
@@ -625,15 +639,20 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
             <div>
               <h3>{item.symbol}</h3>
               <p>
-                {item.settings.strategyLabel} · {item.settings.executionMode} · source{" "}
-                {item.settings.primarySource || "unknown"}
+                {item.settings.strategyLabel} · {item.settings.executionMode} ·{" "}
+                {item.settings.engine || "akquant"} {item.settings.engineVersion || ""}
               </p>
             </div>
             <div className="tag-row">
               <span className="tag-chip">仓位 {(item.settings.positionSize * 100).toFixed(0)}%</span>
               <span className="tag-chip">手数 {item.settings.lotSize}</span>
+              {item.settings.fillPolicy ? (
+                <span className="tag-chip">
+                  {item.settings.fillPolicy.priceBasis}/{item.settings.fillPolicy.temporal}
+                </span>
+              ) : null}
               <span className="tag-chip">
-                基准 {item.settings.benchmarkSymbol || "未设置"}
+                source {item.settings.primarySource || "unknown"}
               </span>
             </div>
           </div>
@@ -771,7 +790,7 @@ function SeriesChart({
   variant?: "equity" | "drawdown";
 }) {
   if (!primary.length) {
-    return <div className="empty-state">暂无序列数据。</div>;
+    return <StateSurface state="empty" title="暂无序列数据。" />;
   }
 
   const primaryValues = primary.map((item) => item.value);

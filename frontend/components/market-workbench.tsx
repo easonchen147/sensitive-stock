@@ -9,6 +9,7 @@ import {
   getMarketQuotes,
   getMarketSectors,
 } from "@/lib/api";
+import { StateSurface } from "@/components/workbench-layout";
 import { parseSymbolsInput } from "@/lib/backtests";
 import type {
   MarketNewsIntelligenceResponse,
@@ -136,8 +137,9 @@ export function MarketWorkbench() {
           </div>
         </div>
 
-        {error ? <div className="banner banner-warning">{error}</div> : null}
-        {notice ? <div className="banner banner-neutral">{notice}</div> : null}
+        {loading ? <StateSurface state="loading" title="Refreshing market data." /> : null}
+        {error ? <StateSurface state="error" title="Some market requests failed." detail={error} /> : null}
+        {notice ? <StateSurface state="degraded" title="Market data is degraded." detail={notice} /> : null}
 
         <div className="toolbar-row">
           <div className="field-grid">
@@ -223,7 +225,7 @@ export function MarketWorkbench() {
                 </div>
               ))
             ) : (
-              <div className="empty-state">暂无报价数据。</div>
+              <StateSurface state="empty" title="暂无报价数据。" />
             )}
           </div>
         </article>
@@ -251,7 +253,7 @@ export function MarketWorkbench() {
                 </div>
               ))
             ) : (
-              <div className="empty-state">暂无板块数据。</div>
+              <StateSurface state="empty" title="暂无板块数据。" />
             )}
           </div>
         </article>
@@ -283,7 +285,7 @@ export function MarketWorkbench() {
                 </article>
               ))
             ) : (
-              <div className="empty-state">暂无新闻数据。</div>
+              <StateSurface state="empty" title="暂无新闻数据。" />
             )}
           </div>
         </article>
@@ -303,7 +305,7 @@ export function MarketWorkbench() {
                 </span>
               ))
             ) : (
-              <span className="empty-state">暂无关键词。</span>
+              <StateSurface state="empty" title="暂无关键词。" />
             )}
           </div>
 
@@ -321,7 +323,7 @@ export function MarketWorkbench() {
                 </div>
               ))
             ) : (
-              <div className="empty-state">当前规则未命中板块提示。</div>
+              <StateSurface state="empty" title="当前规则未命中板块提示。" />
             )}
           </div>
         </article>

@@ -3,8 +3,22 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { resolveBackendApiBaseUrl } from "@/lib/api-base";
 import { ACCESS_TOKEN_COOKIE_NAME } from "@/lib/auth";
+import { isProtectedOpenApiPath } from "@/lib/openapi-client";
 
 async function proxyToBackend(request: NextRequest, slug: string[]) {
+  const backendPath = `/api/v1/${slug.join("/")}`;
+  if (!isProtectedOpenApiPath(backendPath)) {
+    return NextResponse.json(
+      {
+        error: {
+          code: "unknown_openapi_route",
+          message: "This backend route is not registered in the frontend OpenAPI binding table.",
+        },
+      },
+      { status: 404 },
+    );
+  }
+
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE_NAME)?.value;
   if (!accessToken) {
@@ -20,7 +34,7 @@ async function proxyToBackend(request: NextRequest, slug: string[]) {
   }
 
   const backendUrl = new URL(
-    `${resolveBackendApiBaseUrl()}/api/v1/${slug.join("/")}${request.nextUrl.search}`,
+    `${resolveBackendApiBaseUrl()}${backendPath}${request.nextUrl.search}`,
   );
   const init: RequestInit = {
     method: request.method,

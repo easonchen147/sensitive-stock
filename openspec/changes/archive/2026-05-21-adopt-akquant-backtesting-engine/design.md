@@ -79,7 +79,7 @@
 1. 核实 AKQuant 当前官方安装方式、依赖与支持能力，并锁定版本。
 2. 在 backend 中引入 AKQuant 依赖，建立独立 adapter/service。
 3. 用 AKQuant 打通最小 `run` + `presets` 路径，跑通后端测试。
-4. 对齐 OpenAPI 与前端类型，升级回测工作台。
+4. 对齐请求/响应 contract 与前端类型，升级回测工作台；全局 `openapi.json` 发布由后续 `complete-backend-openapi-platform` change 统一完成。
 5. 将旧 `backend/backtesting/*` 主路径降级为兼容层，再逐步下线。
 
 回滚策略：

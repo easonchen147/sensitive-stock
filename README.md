@@ -50,14 +50,15 @@
 
 ## OpenSpec 状态
 
-当前 `openspec list --json` 显示只有一个活动变更：
+当前仓库使用 `openspec/` 管理高风险变更。常用检查命令：
 
-- `add-admin-token-auth`
-  - 状态：`in-progress`
-  - 进度：`11/12`
-  - 剩余任务：`4.4 仅在 review 与验证通过后 archive 该 change，并完成 git add / git commit`
+```bash
+openspec list --json
+openspec validate --all --strict
+```
 
-也就是说，功能实现和验证基本完成，剩下的是归档与提交收尾，而不是新的功能缺口。
+已归档的 OpenSpec change 会进入 `openspec/changes/archive/`，主规格位于
+`openspec/specs/`。
 
 ## 后端初始化
 
@@ -139,7 +140,7 @@ OpenSpec：
 
 ```bash
 openspec list --json
-openspec status --change add-admin-token-auth --json
+openspec validate --all --strict
 ```
 
 ## 开发约束
@@ -149,3 +150,55 @@ openspec status --change add-admin-token-auth --json
 - 新的后端能力优先进入 `backend/app/api` 和 `backend/app/services`。
 - 仍在保留的 `backend/backtesting/`、`backend/factor_analysis.py`、`backend/portfolio_optimizer.py` 代表“尚未完全迁出的旧域逻辑”，不是继续往根目录扩散的理由。
 - 本地敏感配置应使用环境变量或 `backend/.env`，不要再依赖旧的根目录 `config.json` 方案。
+
+## Backend OpenAPI Contract
+
+The backend now publishes a global OpenAPI 3.1 contract for every formal
+versioned API:
+
+- Runtime discovery: `GET /api/v1/openapi.json`
+- Static artifact: `openapi.json`
+- Generator command:
+
+```bash
+cd backend
+uv run python scripts/generate_openapi.py
+```
+
+The contract covers auth, capabilities, market data, AKQuant-backed backtests,
+and the migrated screener, diagnosis, factors, and portfolio capability
+endpoints. Public allowlist operations are `GET /api/v1/health`,
+`GET /api/v1/openapi.json`, and `POST /api/v1/auth/login`; all other formal
+business APIs declare the shared bearer-token security scheme.
+
+## Frontend Design And Contract Layer
+
+The Next.js frontend now uses a Huashu-inspired **Quiet Capital Terminal**
+direction for the research product surface:
+
+- shared workbench structure for dashboard, backtests, market, screener,
+  diagnosis, factors, and portfolio pages;
+- restrained research-terminal styling in `frontend/app/globals.css`;
+- reusable workbench/state components in `frontend/components/workbench-layout.tsx`;
+- shared loading, empty, degraded, error, and ready states for data workflows.
+
+Frontend backend calls are governed through `frontend/lib/openapi-client.ts`.
+The route binding table maps frontend route keys to paths in `openapi.json`,
+and `frontend/lib/openapi-client.test.ts` verifies that the binding table stays
+covered by the generated backend contract.
+
+## Research Capability APIs
+
+The former skeleton capabilities are now formal backend and frontend workbench
+surfaces:
+
+- Screener: `GET /api/v1/screener`, `POST /api/v1/screener/run`,
+  `POST /api/v1/screener/export`
+- Diagnosis: `GET /api/v1/diagnosis`, `POST /api/v1/diagnosis/run`
+- Factors: `GET /api/v1/factors`, `POST /api/v1/factors/analyze`
+- Portfolio: `GET /api/v1/portfolio`, `POST /api/v1/portfolio/optimize`
+
+`GET /api/v1/capabilities` reports `screener`, `diagnosis`, `factors`, and
+`portfolio` as `migrated`. Frontend routes `/screener`, `/diagnosis`,
+`/factors`, and `/portfolio` render real workbenches rather than placeholder
+brief pages.

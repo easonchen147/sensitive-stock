@@ -8,7 +8,7 @@
 - 建立 AKQuant adapter/service 层，把现有 Flask API、前端工作台和必要兼容字段映射到 AKQuant 运行模型。
 - 用 AKQuant 的策略目录、执行配置、结果统计与回测运行输出重构现有回测 contract。
 - 逐步下线 `backend/backtesting/*` 的主执行职责，将其保留为迁移兼容层直至完全移除。
-- 更新前后端类型、OpenAPI、文档和测试，使“AKQuant 直连集成”成为仓库的正式事实。
+- 更新前后端类型、文档和测试，并把回测 contract 稳定到可供后续 `complete-backend-openapi-platform` change 统一发布 `openapi.json` 的状态，使“AKQuant 直连集成”成为仓库的正式事实。
 
 ## Capabilities
 

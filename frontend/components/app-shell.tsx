@@ -10,31 +10,43 @@ const NAV_ITEMS = [
     href: "/",
     label: "Overview",
     badge: "Cockpit",
-    summary: "查看真实完成度、当前入口和双运行时边界。",
+    summary: "Capability inventory, API status, and research workflow entry points.",
   },
   {
     href: "/backtests",
     label: "Backtests",
     badge: "Live",
-    summary: "当前最完整的工作台链路，已接通 Flask 回测 API。",
+    summary: "AKQuant-backed strategy execution and structured reports.",
   },
   {
     href: "/market",
     label: "Market",
     badge: "Live Data",
-    summary: "真实消费 AkShare/Jin10 后端接口，展示行情、板块与 intelligence。",
+    summary: "AkShare and Jin10 market intelligence from the Flask backend.",
   },
   {
     href: "/screener",
     label: "Screener",
-    badge: "Skeleton",
-    summary: "保留新架构入口，但东方财富选股链路尚未迁入。",
+    badge: "Migrated",
+    summary: "Structured filters, natural-language interpretation, export rows, and backtest handoff.",
   },
   {
     href: "/diagnosis",
     label: "Diagnosis",
-    badge: "Skeleton",
-    summary: "AI 诊股仍处于后端边界预留阶段。",
+    badge: "Migrated",
+    summary: "Market context, indicator summaries, diagnosis sections, and degraded metadata.",
+  },
+  {
+    href: "/factors",
+    label: "Factors",
+    badge: "Migrated",
+    summary: "Factor analysis API with latest factors, IC ranking, and window metadata.",
+  },
+  {
+    href: "/portfolio",
+    label: "Portfolio",
+    badge: "Migrated",
+    summary: "Portfolio optimizer API with objectives, allocations, and statistics.",
   },
 ];
 
@@ -57,10 +69,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="shell-brand-block">
             <div className="shell-brand">
               <div className="shell-mark">Sensitive Stock</div>
-              <div className="shell-tag">Research Desk / Dual Runtime</div>
+              <div className="shell-tag">Research Desk / OpenAPI Platform</div>
             </div>
             <div className="shell-brand-note">
-              用更诚实的状态表达，把已迁移能力做成真正可操作的研究工作台。
+              All primary research workbenches are now backed by Flask APIs and the shared
+              OpenAPI contract.
             </div>
           </div>
 
@@ -94,8 +107,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="shell-status-chip" data-tone="neutral">
               Market connected
             </span>
-            <span className="shell-status-chip" data-tone="warning">
-              Screener / Diagnosis skeleton
+            <span className="shell-status-chip" data-tone="positive">
+              Research APIs migrated
             </span>
           </div>
         </div>

@@ -115,6 +115,10 @@ frontend/.turbo/
 frontend/.eslintcache
 frontend/*.tsbuildinfo
 
+# Local browser verification artifacts
+.playwright-mcp/
+*-redesign-*.png
+
 backend/bin/
 backend/coverage.out
 backend/.venv/

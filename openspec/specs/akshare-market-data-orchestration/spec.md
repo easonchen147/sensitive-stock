@@ -1,7 +1,7 @@
 # akshare-market-data-orchestration Specification
 
 ## Purpose
-Define an AkShare-first market data contract for backend services and the legacy backtesting pipeline, with explicit fallback order and callable market APIs.
+Define an AkShare-first market data contract for backend services and AKQuant-backed backtests, with explicit fallback order and callable market APIs.
 
 ## Requirements
 ### Requirement: Backend market data services SHALL use AkShare as the primary A-share data source
@@ -36,3 +36,17 @@ The system SHALL provide backend endpoints for market overview, quotes, and sect
 #### Scenario: Client requests hot sectors
 - **WHEN** a client calls the backend hot sectors endpoint
 - **THEN** the system returns normalized concept or industry sector rows sourced from AkShare and annotated with the upstream source name
+
+### Requirement: AKQuant-backed backtests SHALL reuse the shared normalized market data contract
+The system SHALL ensure that AKQuant-backed backtests consume the same normalized A-share market data contract and fallback policy used by the broader backend platform.
+
+#### Scenario: AKQuant-backed run requests historical market data
+- **WHEN** the AKQuant adapter requests historical data for an A-share backtest
+- **THEN** the system resolves the request through the shared normalized market-data contract instead of introducing a separate incompatible feed shape
+
+### Requirement: Shared market data contracts SHALL support screener, diagnosis, factor, and portfolio workflows
+The system SHALL make AkShare-first market data contracts reusable across screening, diagnosis, factor analysis, and portfolio optimization workflows so all research capabilities consume consistent normalized market inputs.
+
+#### Scenario: Research workflow requests normalized market history
+- **WHEN** a screener, diagnosis, factor-analysis, or portfolio workflow requests A-share market data
+- **THEN** the system resolves the request through the shared normalized market-data contract instead of introducing a workflow-specific ad hoc data shape

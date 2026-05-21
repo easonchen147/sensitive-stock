@@ -88,6 +88,7 @@ poetry run ruff check .
 已落地：
 
 - `GET /api/v1/health`
+- `GET /api/v1/openapi.json`
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/session`
 - `GET /api/v1/capabilities`
@@ -98,12 +99,38 @@ poetry run ruff check .
 - `GET /api/v1/market/sectors`
 - `GET /api/v1/market/news`
 - `GET /api/v1/market/news/intelligence`
-
-保留 placeholder：
-
 - `GET /api/v1/screener`
+- `POST /api/v1/screener/run`
+- `POST /api/v1/screener/export`
 - `GET /api/v1/diagnosis`
+- `POST /api/v1/diagnosis/run`
 - `GET /api/v1/factors`
+- `POST /api/v1/factors/analyze`
 - `GET /api/v1/portfolio`
+- `POST /api/v1/portfolio/optimize`
 
-除 `GET /api/v1/health` 与 `POST /api/v1/auth/login` 外，其余功能 API 默认要求 `Authorization: Bearer <token>`。
+除 `GET /api/v1/health`、`GET /api/v1/openapi.json` 与 `POST /api/v1/auth/login` 外，其余功能 API 默认要求 `Authorization: Bearer <token>`。
+
+## OpenAPI
+
+The backend OpenAPI contract is the source of truth for frontend integration and
+external API consumers.
+
+- Runtime route: `GET /api/v1/openapi.json`
+- Static artifact from repo root: `openapi.json`
+- Generate the artifact:
+
+```bash
+cd backend
+uv run python scripts/generate_openapi.py
+```
+
+The document includes shared components for bearer auth, `ErrorEnvelope`,
+request schemas, response schemas, market source/degraded metadata, AKQuant
+backtest contracts, and the migrated screener, diagnosis, factors, and portfolio
+capability endpoints.
+
+`GET /api/v1/openapi.json`, `GET /api/v1/health`, and
+`POST /api/v1/auth/login` are public. All other formal API operations use the
+shared `bearerAuth` OpenAPI security scheme and require
+`Authorization: Bearer <token>` at runtime.

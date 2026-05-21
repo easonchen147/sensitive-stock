@@ -1,0 +1,2879 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sensitive Stock Backend API",
+    "version": "0.1.0",
+    "description": "Global OpenAPI contract for the Sensitive Stock Flask backend. All protected business operations use the shared bearerAuth scheme."
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/v1/openapi.json": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "operationId": "getOpenApiDocument",
+        "summary": "Return the published OpenAPI document.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenApiDocument"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "operationId": "getHealth",
+        "summary": "Return backend service health metadata.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "login",
+        "summary": "Issue a bearer token for valid administrator credentials.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/session": {
+      "get": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "getSession",
+        "summary": "Return the authenticated administrator session.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capabilities": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "listCapabilities",
+        "summary": "List migrated, skeleton, and planned backend capabilities.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityInventoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "operationId": "getMarketOverview",
+        "summary": "Return market source metadata and available market routes.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/market/quotes": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "operationId": "getMarketQuotes",
+        "summary": "Return latest quotes for one or more A-share symbols.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketQuotesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbols",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "title": "Symbols",
+              "type": "array"
+            },
+            "style": "form",
+            "explode": false
+          }
+        ]
+      }
+    },
+    "/api/v1/market/sectors": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "operationId": "getMarketSectors",
+        "summary": "Return hot concept or industry sectors.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketSectorsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sectorType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": "concept",
+              "enum": [
+                "concept",
+                "industry"
+              ],
+              "title": "Sectortype",
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/market/news": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "operationId": "getMarketNews",
+        "summary": "Return latest Jin10 market news items.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketNewsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/market/news/intelligence": {
+      "get": {
+        "tags": [
+          "market"
+        ],
+        "operationId": "getMarketNewsIntelligence",
+        "summary": "Return derived market intelligence from Jin10 news and market data.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketNewsIntelligenceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/backtests/presets": {
+      "get": {
+        "tags": [
+          "backtests"
+        ],
+        "operationId": "listBacktestPresets",
+        "summary": "Return AKQuant-backed preset strategy metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestPresetCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/backtests/run": {
+      "post": {
+        "tags": [
+          "backtests"
+        ],
+        "operationId": "runBacktests",
+        "summary": "Run an AKQuant-backed backtest.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backtest execution result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestRunResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BacktestRunRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/screener": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "getScreenerOverview",
+        "summary": "Return screener templates and capability metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreenerOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/screener/run": {
+      "post": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "runScreener",
+        "summary": "Execute a structured or natural-language screening request.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreenerRunResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScreenerRunRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/screener/export": {
+      "post": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "exportScreenerResults",
+        "summary": "Return export-ready screener rows.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreenerExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScreenerExportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/diagnosis": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "getDiagnosisOverview",
+        "summary": "Return diagnosis report metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/diagnosis/run": {
+      "post": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "runDiagnosis",
+        "summary": "Generate a structured stock diagnosis report.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisRunResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/factors": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "getFactorsOverview",
+        "summary": "Return factor analysis metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactorsOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/factors/analyze": {
+      "post": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "analyzeFactors",
+        "summary": "Run factor analysis for a symbol and date range.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactorAnalysisResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FactorAnalysisRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio": {
+      "get": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "getPortfolioOverview",
+        "summary": "Return portfolio optimization metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioOverviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/portfolio/optimize": {
+      "post": {
+        "tags": [
+          "capabilities"
+        ],
+        "operationId": "optimizePortfolio",
+        "summary": "Optimize a portfolio for the requested objective.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioOptimizationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation or request error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected backend error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PortfolioOptimizationRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Bearer token returned by POST /api/v1/auth/login."
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "username": {
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          },
+          "password": {
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "BacktestRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "market": {
+            "$ref": "#/components/schemas/BacktestMarketRequest"
+          },
+          "strategy": {
+            "$ref": "#/components/schemas/BacktestStrategyRequest"
+          },
+          "execution": {
+            "$ref": "#/components/schemas/BacktestExecutionRequest"
+          },
+          "costs": {
+            "$ref": "#/components/schemas/BacktestCostRequest"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/BacktestRiskRequest"
+          },
+          "initialCapital": {
+            "default": 100000.0,
+            "exclusiveMinimum": 0,
+            "title": "Initialcapital",
+            "type": "number"
+          }
+        },
+        "required": [
+          "market",
+          "strategy"
+        ],
+        "title": "BacktestRunRequest",
+        "type": "object"
+      },
+      "ScreenerRunRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "universe": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Universe",
+            "type": "array"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/ScreenerFilters"
+          },
+          "sortBy": {
+            "default": "score",
+            "enum": [
+              "score",
+              "price",
+              "changePercent"
+            ],
+            "title": "Sortby",
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "backtestStartDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backteststartdate"
+          },
+          "backtestEndDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backtestenddate"
+          }
+        },
+        "title": "ScreenerRunRequest",
+        "type": "object"
+      },
+      "ScreenerExportRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "universe": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Universe",
+            "type": "array"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/ScreenerFilters"
+          },
+          "sortBy": {
+            "default": "score",
+            "enum": [
+              "score",
+              "price",
+              "changePercent"
+            ],
+            "title": "Sortby",
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "backtestStartDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backteststartdate"
+          },
+          "backtestEndDate": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Backtestenddate"
+          },
+          "format": {
+            "default": "json",
+            "enum": [
+              "json",
+              "csv"
+            ],
+            "title": "Format",
+            "type": "string"
+          }
+        },
+        "title": "ScreenerExportRequest",
+        "type": "object"
+      },
+      "DiagnosisRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "startDate": {
+            "format": "date",
+            "title": "Startdate",
+            "type": "string"
+          },
+          "endDate": {
+            "format": "date",
+            "title": "Enddate",
+            "type": "string"
+          },
+          "symbol": {
+            "maxLength": 12,
+            "minLength": 6,
+            "title": "Symbol",
+            "type": "string"
+          },
+          "includeNews": {
+            "default": true,
+            "title": "Includenews",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "symbol"
+        ],
+        "title": "DiagnosisRequest",
+        "type": "object"
+      },
+      "FactorAnalysisRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "startDate": {
+            "format": "date",
+            "title": "Startdate",
+            "type": "string"
+          },
+          "endDate": {
+            "format": "date",
+            "title": "Enddate",
+            "type": "string"
+          },
+          "symbol": {
+            "maxLength": 12,
+            "minLength": 6,
+            "title": "Symbol",
+            "type": "string"
+          },
+          "factors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Factors",
+            "type": "array"
+          },
+          "forwardDays": {
+            "default": 5,
+            "maximum": 60,
+            "minimum": 1,
+            "title": "Forwarddays",
+            "type": "integer"
+          },
+          "topN": {
+            "default": 5,
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Topn",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "symbol"
+        ],
+        "title": "FactorAnalysisRequest",
+        "type": "object"
+      },
+      "PortfolioOptimizationRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "startDate": {
+            "format": "date",
+            "title": "Startdate",
+            "type": "string"
+          },
+          "endDate": {
+            "format": "date",
+            "title": "Enddate",
+            "type": "string"
+          },
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 2,
+            "title": "Symbols",
+            "type": "array"
+          },
+          "objective": {
+            "default": "maximum_sharpe",
+            "enum": [
+              "equal_weight",
+              "minimum_variance",
+              "maximum_sharpe",
+              "risk_parity"
+            ],
+            "title": "Objective",
+            "type": "string"
+          },
+          "riskFreeRate": {
+            "default": 0.03,
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Riskfreerate",
+            "type": "number"
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "symbols"
+        ],
+        "title": "PortfolioOptimizationRequest",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": [
+          "service",
+          "environment",
+          "apiVersion",
+          "status"
+        ],
+        "properties": {
+          "service": {
+            "type": "string"
+          },
+          "environment": {
+            "type": "string"
+          },
+          "apiVersion": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "accessToken",
+          "tokenType",
+          "expiresIn",
+          "user"
+        ],
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "tokenType": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expiresIn": {
+            "type": "integer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserPrincipal"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "required": [
+          "authenticated",
+          "expiresIn",
+          "user"
+        ],
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "expiresIn": {
+            "type": "integer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserPrincipal"
+          }
+        }
+      },
+      "UserPrincipal": {
+        "type": "object",
+        "required": [
+          "username",
+          "roles"
+        ],
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "APIError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "details": {}
+        },
+        "additionalProperties": false
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/APIError"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Capability": {
+        "type": "object",
+        "required": [
+          "name",
+          "label",
+          "status",
+          "path",
+          "summary"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "migrated",
+              "skeleton",
+              "planned"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "CapabilityInventoryResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Capability"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlaceholderCapabilityResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Capability"
+          },
+          {
+            "type": "object",
+            "required": [
+              "nextStep"
+            ],
+            "properties": {
+              "nextStep": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "CapabilityMetadata": {
+        "type": "object",
+        "required": [
+          "source",
+          "degraded"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "degraded": {
+            "type": "boolean"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "unavailableInputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "SourceMetadata": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "primarySource": {
+            "type": "string"
+          },
+          "fallbackSources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "degraded": {
+            "type": "boolean"
+          },
+          "requestedLimit": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "MarketOverviewResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          {
+            "type": "object",
+            "required": [
+              "primarySource",
+              "fallbackSources",
+              "routes"
+            ],
+            "properties": {
+              "routes": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MarketQuotesResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "items"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MarketQuote"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MarketQuote": {
+        "type": "object",
+        "required": [
+          "symbol"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "changePercent": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true
+      },
+      "MarketSectorsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "sectorType",
+              "items"
+            ],
+            "properties": {
+              "sectorType": {
+                "type": "string",
+                "enum": [
+                  "concept",
+                  "industry"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MarketSector"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MarketSector": {
+        "type": "object",
+        "required": [
+          "name",
+          "type",
+          "source"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "changePercent": {
+            "type": "number"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      },
+      "MarketNewsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SourceMetadata"
+          },
+          {
+            "type": "object",
+            "required": [
+              "source",
+              "requestedLimit",
+              "degraded",
+              "items"
+            ],
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MarketNewsItem"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "MarketNewsItem": {
+        "type": "object",
+        "required": [
+          "id",
+          "publishedAt",
+          "title",
+          "content"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "publishedAt": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "important": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "MarketNewsIntelligenceResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MarketNewsResponse"
+          },
+          {
+            "type": "object",
+            "required": [
+              "keywords",
+              "sectorHints"
+            ],
+            "properties": {
+              "keywords": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "sectorHints": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BacktestPresetCatalogResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BacktestPreset"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BacktestPreset": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "description",
+          "defaultParams",
+          "parameterSchema"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "useCase": {
+            "type": "string"
+          },
+          "riskNotes": {
+            "type": "string"
+          },
+          "defaultParams": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "parameterSchema": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "executionMetadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "BacktestRunResponse": {
+        "type": "object",
+        "required": [
+          "results",
+          "failures"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BacktestSymbolResult"
+            }
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "BacktestSymbolResult": {
+        "type": "object",
+        "required": [
+          "symbol",
+          "settings",
+          "metrics",
+          "series",
+          "tradeStats",
+          "trades"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "comparison": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "series": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "tradeStats": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "trades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assumptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "insights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      },
+      "ScreenerOverviewResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "templates",
+          "metadata"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "migrated"
+            ]
+          },
+          "templates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ScreenerRunResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "summary",
+          "appliedFilters",
+          "exportRows",
+          "backtestHandoff",
+          "metadata"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScreenerCandidate"
+            }
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "appliedFilters": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "interpretedPrompt": {
+            "type": "string"
+          },
+          "exportRows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "backtestHandoff": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ScreenerCandidate": {
+        "type": "object",
+        "required": [
+          "symbol",
+          "name",
+          "price",
+          "changePercent",
+          "score"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "changePercent": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number"
+          },
+          "matchedRules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "factorSummary": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "ScreenerExportResponse": {
+        "type": "object",
+        "required": [
+          "format",
+          "columns",
+          "rows",
+          "metadata"
+        ],
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": [
+              "json",
+              "csv"
+            ]
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        }
+      },
+      "DiagnosisOverviewResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "sections",
+          "metadata"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "migrated"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "DiagnosisRunResponse": {
+        "type": "object",
+        "required": [
+          "symbol",
+          "marketContext",
+          "indicators",
+          "sections",
+          "riskNotes",
+          "metadata"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "marketContext": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "indicators": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "riskNotes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FactorsOverviewResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "supportedFactors",
+          "metadata"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "migrated"
+            ]
+          },
+          "supportedFactors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FactorAnalysisResponse": {
+        "type": "object",
+        "required": [
+          "symbol",
+          "window",
+          "latestFactors",
+          "rankedFactors",
+          "summary",
+          "metadata"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "window": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "latestFactors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "rankedFactors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "summary": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "PortfolioOverviewResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "objectives",
+          "metadata"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "migrated"
+            ]
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "PortfolioOptimizationResponse": {
+        "type": "object",
+        "required": [
+          "objective",
+          "window",
+          "allocations",
+          "statistics",
+          "metadata"
+        ],
+        "properties": {
+          "objective": {
+            "type": "string"
+          },
+          "window": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "allocations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "statistics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/CapabilityMetadata"
+          }
+        },
+        "additionalProperties": true
+      },
+      "OpenApiDocument": {
+        "type": "object",
+        "required": [
+          "openapi",
+          "info",
+          "paths",
+          "components"
+        ],
+        "additionalProperties": true
+      },
+      "BacktestCostRequest": {
+        "properties": {
+          "tradingFee": {
+            "default": 0.0005,
+            "minimum": 0,
+            "title": "Tradingfee",
+            "type": "number"
+          },
+          "stampTax": {
+            "default": 0.001,
+            "minimum": 0,
+            "title": "Stamptax",
+            "type": "number"
+          },
+          "slippage": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Slippage",
+            "type": "number"
+          }
+        },
+        "title": "BacktestCostRequest",
+        "type": "object"
+      },
+      "BacktestExecutionRequest": {
+        "properties": {
+          "mode": {
+            "default": "close",
+            "enum": [
+              "close",
+              "next_open"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "positionSize": {
+            "default": 1.0,
+            "exclusiveMinimum": 0,
+            "maximum": 1,
+            "title": "Positionsize",
+            "type": "number"
+          },
+          "lotSize": {
+            "default": 100,
+            "minimum": 1,
+            "title": "Lotsize",
+            "type": "integer"
+          }
+        },
+        "title": "BacktestExecutionRequest",
+        "type": "object"
+      },
+      "BacktestMarketRequest": {
+        "properties": {
+          "symbols": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Symbols",
+            "type": "array"
+          },
+          "startDate": {
+            "format": "date",
+            "title": "Startdate",
+            "type": "string"
+          },
+          "endDate": {
+            "format": "date",
+            "title": "Enddate",
+            "type": "string"
+          },
+          "adjust": {
+            "default": "qfq",
+            "enum": [
+              "",
+              "qfq",
+              "hfq"
+            ],
+            "title": "Adjust",
+            "type": "string"
+          },
+          "benchmarkSymbol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Benchmarksymbol"
+          }
+        },
+        "required": [
+          "symbols",
+          "startDate",
+          "endDate"
+        ],
+        "title": "BacktestMarketRequest",
+        "type": "object"
+      },
+      "BacktestRiskRequest": {
+        "properties": {
+          "stopLoss": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Stoploss",
+            "type": "number"
+          },
+          "takeProfit": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Takeprofit",
+            "type": "number"
+          }
+        },
+        "title": "BacktestRiskRequest",
+        "type": "object"
+      },
+      "BacktestStrategyRequest": {
+        "properties": {
+          "mode": {
+            "default": "custom",
+            "enum": [
+              "preset",
+              "custom"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "presetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Presetid"
+          },
+          "code": {
+            "default": "",
+            "title": "Code",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          }
+        },
+        "title": "BacktestStrategyRequest",
+        "type": "object"
+      },
+      "ScreenerFilters": {
+        "properties": {
+          "minPrice": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Minprice"
+          },
+          "maxPrice": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Maxprice"
+          },
+          "minChangePercent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Minchangepercent"
+          },
+          "maxChangePercent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Maxchangepercent"
+          },
+          "sectors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sectors",
+            "type": "array"
+          }
+        },
+        "title": "ScreenerFilters",
+        "type": "object"
+      }
+    },
+    "parameters": {
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "platform",
+      "description": "Health, discovery, and capability inventory."
+    },
+    {
+      "name": "auth",
+      "description": "Token login and session APIs."
+    },
+    {
+      "name": "market",
+      "description": "AkShare market data and Jin10 intelligence APIs."
+    },
+    {
+      "name": "backtests",
+      "description": "AKQuant-backed backtest APIs."
+    },
+    {
+      "name": "capabilities",
+      "description": "Current and migrating research capabilities."
+    }
+  ]
+}

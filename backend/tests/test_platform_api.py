@@ -32,4 +32,5 @@ def test_capability_inventory_lists_migrated_and_placeholder_modules() -> None:
     items = {item["name"]: item for item in payload["items"]}
     assert items["backtest"]["status"] == "migrated"
     assert items["market"]["status"] == "migrated"
-    assert items["screener"]["path"] == "/api/v1/screener"
+    assert items["screener"]["status"] == "migrated"
+    assert items["screener"]["path"] == "/api/v1/screener/run"

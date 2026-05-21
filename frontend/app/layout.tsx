@@ -20,6 +20,9 @@ const bodyFont = IBM_Plex_Sans({
 export const metadata: Metadata = {
   title: "Sensitive Stock / Research Desk",
   description: "A-share analysis and backtest workbench on the new Next.js + Flask runtime.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

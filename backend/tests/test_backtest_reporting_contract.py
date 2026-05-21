@@ -6,11 +6,11 @@ import pandas as pd
 import pytest
 
 from app.services.backtests import serialize_symbol_result
-from backtesting.presets import serialize_strategy_presets
+from app.services.backtests_akquant import AKQuantBacktestService
 
 
 def test_strategy_presets_expose_summary_and_parameter_help_metadata() -> None:
-    payload = serialize_strategy_presets()
+    payload = AKQuantBacktestService().list_presets()
 
     ma_cross = next(item for item in payload["items"] if item["id"] == "ma_cross")
 
@@ -19,98 +19,110 @@ def test_strategy_presets_expose_summary_and_parameter_help_metadata() -> None:
     assert ma_cross["riskNotes"]
     assert ma_cross["parameterSchema"][0]["helpText"]
     assert ma_cross["parameterSchema"][0]["group"] == "trend"
+    assert ma_cross["executionMetadata"]["engine"] == "akquant"
+    assert ma_cross["executionMetadata"]["fillPolicies"][0]["priceBasis"] == "close"
 
 
 def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_stats() -> None:
-    index = pd.to_datetime(["2025-01-02", "2025-01-03", "2025-01-06", "2025-01-07"])
-    performance = pd.DataFrame(
+    index = pd.date_range("2025-01-02", periods=4, freq="D", tz="Asia/Shanghai")
+    equity_curve = pd.Series([100000.0, 104000.0, 109000.0, 112000.0], index=index, dtype=float)
+    cash_curve = pd.Series([100000.0, 20000.0, 18000.0, 112000.0], index=index, dtype=float)
+    metrics_df = pd.DataFrame(
         {
-            "strategy_equity": [100000.0, 104000.0, 109000.0, 112000.0],
-            "bench_equity": [100000.0, 101000.0, 103000.0, 106000.0],
-            "drawdown": [0.0, -0.01, -0.02, -0.015],
-            "position": [0.0, 0.8, 0.8, 0.0],
-            "cash": [100000.0, 20000.0, 18000.0, 112000.0],
+            "value": [
+                12.0,
+                24.0,
+                18.0,
+                1.35,
+                8.0,
+                50.0,
+            ]
         },
-        index=index,
+        index=[
+            "total_return_pct",
+            "annualized_return",
+            "volatility",
+            "sharpe_ratio",
+            "max_drawdown_pct",
+            "win_rate",
+        ],
     )
-    trades = pd.DataFrame(
+    orders_df = pd.DataFrame(
         [
             {
-                "date": pd.Timestamp("2025-01-03"),
-                "action": "Buy",
-                "reason": "signal_change",
-                "price": 10.0,
-                "shares": 8000,
-                "notional": 80000.0,
-                "fee": 40.0,
-                "tax": 0.0,
+                "status": "filled",
+                "updated_at": pd.Timestamp("2025-01-03", tz="Asia/Shanghai"),
+                "side": "buy",
+                "avg_price": 10.0,
+                "filled_quantity": 8000,
+                "quantity": 8000,
+                "commission": 40.0,
+                "tag": "signal_change",
             },
             {
-                "date": pd.Timestamp("2025-01-07"),
-                "action": "Sell",
-                "reason": "signal_change",
-                "price": 14.0,
-                "shares": 8000,
-                "notional": 112000.0,
-                "fee": 56.0,
-                "tax": 112.0,
+                "status": "filled",
+                "updated_at": pd.Timestamp("2025-01-07", tz="Asia/Shanghai"),
+                "side": "sell",
+                "avg_price": 14.0,
+                "filled_quantity": 8000,
+                "quantity": 8000,
+                "commission": 168.0,
+                "tag": "signal_change",
             },
         ]
     )
-    monthly_returns = pd.Series(
-        [0.12],
-        index=pd.to_datetime(["2025-01-31"]),
-        dtype=float,
+    trades_df = pd.DataFrame(
+        [
+            {
+                "duration": pd.Timedelta(days=4),
+                "return_pct": 12.0,
+                "net_pnl": 12000.0,
+            }
+        ]
     )
     result = SimpleNamespace(
-        settings={
-            "symbol": "000001",
-            "benchmarkSymbol": "159919",
-            "adjust": "qfq",
-            "strategyMode": "preset",
-            "strategyPreset": "ma_cross",
-            "strategyLabel": "双均线策略",
-            "executionMode": "next_open",
-            "positionSize": 0.8,
-            "lotSize": 100,
-            "tradingFee": 0.0005,
-            "stampTax": 0.001,
-            "slippage": 0.0003,
-            "stopLoss": 0.06,
-            "takeProfit": 0.18,
-            "primarySource": "akshare",
-            "fallbackSources": ["tushare", "sina_direct"],
-        },
-        metrics={
-            "strategy_total_return": 0.12,
-            "annualized_return": 0.24,
-            "volatility": 0.18,
-            "sharpe": 1.35,
-            "max_drawdown": -0.08,
-            "win_rate": 0.5,
-            "trading_days": 4.0,
-        },
-        comparison={
-            "benchmark_total_return": 0.06,
-            "excess_return": 0.06,
-            "information_ratio": 0.8,
-            "tracking_error": 0.12,
-        },
-        performance=performance,
-        trade_stats={
-            "tradeCount": 2,
-            "winRate": 1.0,
-            "averageHoldingDays": 4.0,
-            "averageTradeReturn": 0.12,
-            "totalCosts": 208.0,
-            "turnover": 1.92,
-        },
-        trades=trades,
-        warnings=["基准数据使用 AkShare 主源。"],
-        monthly_returns=monthly_returns,
+        equity_curve_daily=equity_curve,
+        cash_curve_daily=cash_curve,
+        metrics_df=metrics_df,
+        orders_df=orders_df,
+        trades_df=trades_df,
     )
 
-    payload = serialize_symbol_result("000001", result)
+    benchmark = pd.DataFrame({"close": [100.0, 101.0, 103.0, 106.0]}, index=index)
+    settings = {
+        "symbol": "000001",
+        "initialCapital": 100000.0,
+        "benchmarkSymbol": "159919",
+        "adjust": "qfq",
+        "strategyMode": "preset",
+        "strategyPreset": "ma_cross",
+        "strategyLabel": "双均线策略",
+        "executionMode": "next_open",
+        "positionSize": 0.8,
+        "lotSize": 100,
+        "tradingFee": 0.0005,
+        "stampTax": 0.001,
+        "slippage": 0.0003,
+        "stopLoss": 0.06,
+        "takeProfit": 0.18,
+        "engine": "akquant",
+        "engineVersion": "0.2.37",
+        "fillPolicy": {
+            "priceBasis": "open",
+            "barOffset": 1,
+            "temporal": "same_cycle",
+        },
+        "primarySource": "akshare",
+        "fallbackSources": ["tushare", "sina_direct"],
+    }
+
+    payload = serialize_symbol_result(
+        "000001",
+        result,
+        settings=settings,
+        benchmark=benchmark,
+        warnings=["基准数据使用 AkShare 主源。"],
+    )
 
     assert payload["tradeStats"]["endingEquity"] == 112000.0
     assert payload["tradeStats"]["netProfit"] == 12000.0
@@ -120,6 +132,11 @@ def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_sta
         for item in payload["assumptions"]
     )
     assert any(
+        item["label"] == "回测内核" and "akquant" in item["value"]
+        for item in payload["assumptions"]
+    )
+    assert any(
         item["title"] == "相对基准" and item["tone"] == "positive"
         for item in payload["insights"]
     )
+    assert payload["trades"][1]["tax"] == pytest.approx(112.0)

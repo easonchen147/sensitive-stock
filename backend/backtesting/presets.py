@@ -61,7 +61,7 @@ PRESETS: dict[str, StrategyPreset] = {
     "ma_cross": StrategyPreset(
         id="ma_cross",
         label="双均线策略",
-        description="AKQuant-inspired moving average crossover preset.",
+        description="AKQuant-backed moving average crossover preset.",
         summary="用快慢均线交叉寻找趋势启动与结束区间。",
         use_case="适合趋势较明确、希望用简单参数快速验证方向的日线研究场景。",
         risk_notes="震荡市里容易反复打脸，建议搭配成本与止损设置一起评估。",
