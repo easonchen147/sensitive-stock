@@ -1,7 +1,7 @@
 # flask-backend-platform Specification
 
 ## Purpose
-Define the stable Flask HTTP shell that exposes migrated capabilities, forwards backtest workbench requests into AKQuant-backed services, publishes OpenAPI discovery, and keeps remaining modules discoverable through explicit placeholder endpoints.
+Define the stable Flask HTTP shell that exposes formal research capabilities, forwards backtest workbench requests into AKQuant-backed services, publishes OpenAPI discovery, and keeps capability inventory aligned with the current product runtime.
 ## Requirements
 ### Requirement: Flask backend workspace SHALL expose a stable HTTP platform shell
 The system SHALL provide a Flask backend workspace with an application factory, shared configuration, JSON error handling, CORS support, a versioned API root, and an OpenAPI discovery surface so that frontend and future services can integrate through a consistent HTTP boundary.
@@ -29,20 +29,18 @@ The system SHALL expose backtest endpoints that accept validated request payload
 - **WHEN** a client submits a malformed backtest payload such as an empty symbol list or invalid date range
 - **THEN** the backend returns a validation error response without executing the AKQuant runtime
 
-### Requirement: Backend capabilities SHALL expose explicit migrated or placeholder endpoints
-The system SHALL expose discoverable backend endpoints for migrated capabilities and explicit placeholder endpoints only for the capabilities that remain unmigrated, so frontend navigation and future services can distinguish live modules from placeholders.
+### Requirement: Backend capabilities SHALL expose formal runtime capability surfaces
+The system SHALL expose a discoverable backend capability inventory and formal capability routes that reflect the current product runtime, so frontend navigation and future services can distinguish ready, limited, and disabled modules without relying on non-operational endpoints.
 
 #### Scenario: Capability inventory is requested
 - **WHEN** a client calls the capability inventory endpoint
-- **THEN** the system returns each capability with a status of `migrated`, `skeleton`, or `planned`, and the `market`, `screener`, `diagnosis`, `factors`, and `portfolio` capabilities are reported according to their real backend availability
+- **THEN** the system returns each capability with a status of `ready`, `limited`, or `disabled`
+- **AND** the `market`, `screener`, `diagnosis`, `factors`, and `portfolio` capabilities are reported according to their real backend availability
 
-#### Scenario: Migrated market endpoint is called
-- **WHEN** a client calls the backend market endpoint after this change
-- **THEN** the system returns a real market service payload that describes the AkShare primary source, fallback order, and available market subroutes instead of a generic placeholder response
-
-#### Scenario: Placeholder capability endpoint is called
-- **WHEN** a client calls an endpoint for a first-phase placeholder capability
-- **THEN** the system returns a successful JSON response describing that capability status and next migration step instead of a generic 404
+#### Scenario: Formal capability overview endpoint is called
+- **WHEN** a client calls a formal capability overview endpoint such as `GET /api/v1/market` or `GET /api/v1/screener`
+- **THEN** the system returns a structured overview or business payload that reflects the real route contract
+- **AND** it does not return a generic status-only summary response
 
 ### Requirement: Analytics helper services SHALL use the unified data provider contract
 The system SHALL update factor analysis and portfolio optimization helpers to use the `HistoricalDataRequest` plus `get_ohlcv()` contract so they remain callable from the new backend service layer.
@@ -78,8 +76,8 @@ The system SHALL expose formal business APIs through shared platform conventions
 - **THEN** the endpoint uses the shared platform conventions for authentication requirements, response structure, and error formatting instead of introducing a one-off route contract
 
 ### Requirement: Backend SHALL expose formal screener, diagnosis, factor, and portfolio APIs
-The system SHALL expose formal backend APIs for screening, diagnosis, factor analysis, and portfolio optimization so those capabilities can be consumed as first-class platform services instead of placeholder routes.
+The system SHALL expose formal backend APIs for screening, diagnosis, factor analysis, and portfolio optimization so those capabilities can be consumed as first-class platform services instead of transitional routes.
 
 #### Scenario: Client calls a formal half-finished capability API
 - **WHEN** a client calls a formal API route for `screener`, `diagnosis`, `factors`, or `portfolio`
-- **THEN** the backend returns structured business results or structured validation/degraded errors rather than a placeholder summary payload
+- **THEN** the backend returns structured business results or structured validation/degraded errors rather than a status-only summary payload

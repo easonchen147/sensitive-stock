@@ -1093,7 +1093,7 @@
           "backtests"
         ],
         "operationId": "listBacktestPresets",
-        "summary": "Return AKQuant-backed preset strategy metadata.",
+        "summary": "Return preset strategy metadata for quantitative backtests.",
         "security": [
           {
             "bearerAuth": []
@@ -1149,7 +1149,7 @@
           "backtests"
         ],
         "operationId": "runBacktests",
-        "summary": "Run an AKQuant-backed backtest.",
+        "summary": "Run a quantitative backtest.",
         "security": [
           {
             "bearerAuth": []
@@ -3896,7 +3896,7 @@
     },
     {
       "name": "backtests",
-      "description": "AKQuant-backed backtest APIs."
+      "description": "Quantitative backtest APIs."
     },
     {
       "name": "capabilities",

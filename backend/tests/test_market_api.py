@@ -149,13 +149,17 @@ class StubNewsIntelligenceService:
                     "sourceIds": ["news-1"],
                 }
             ],
-            "predictionSummary": "stub prediction",
-            "riskNotes": ["Validate with backtests."],
+            "predictionSummary": "测试预测摘要",
+            "riskNotes": ["建议继续用量化回测验证。"],
             "backtestHandoff": {
                 "endpoint": "/api/v1/backtests/run",
                 "suggestedPreset": "event_theme_momentum",
                 "symbols": symbols or [],
                 "defaultParams": {"lookback_window": 20},
+                "notes": [
+                    "可将这里的候选标的直接交给量化回测，用事件主题动量策略做二次验证。",
+                    "预测结果只用于研究判断与复盘，不应被视为直接交易指令。",
+                ],
             },
         }
 

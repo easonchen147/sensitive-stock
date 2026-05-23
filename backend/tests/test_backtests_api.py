@@ -65,7 +65,7 @@ class StubBacktestService:
                     "assumptions": [
                         {
                             "label": "执行模式",
-                            "value": "next_open",
+                            "value": "次日开盘成交",
                             "detail": "信号变化后的下一交易日开盘成交。",
                         }
                     ],
@@ -87,7 +87,7 @@ class StubBacktestService:
                 {
                     "id": "ma_cross",
                     "label": "双均线策略",
-                    "description": "AKQuant-backed moving average crossover preset.",
+                    "description": "使用快慢均线交叉验证趋势启动与结束区间。",
                     "defaultParams": {"fast_window": 5, "slow_window": 20},
                     "executionMetadata": {
                         "engine": "akquant",

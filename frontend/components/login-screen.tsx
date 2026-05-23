@@ -11,7 +11,7 @@ export function LoginScreen() {
   const searchParams = useSearchParams();
   const nextPath = sanitizeNextPath(searchParams.get("next"));
 
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -51,7 +51,7 @@ export function LoginScreen() {
               autoComplete="username"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              placeholder="admin"
+              placeholder="请输入管理员用户名"
             />
           </div>
 

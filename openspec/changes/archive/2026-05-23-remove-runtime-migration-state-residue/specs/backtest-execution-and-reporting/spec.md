@@ -1,8 +1,5 @@
-﻿# backtest-execution-and-reporting Specification
+## MODIFIED Requirements
 
-## Purpose
-Define the AKQuant-backed backtest workbench contract, preset catalog, single-symbol A-share ledger execution rules, and structured reporting format shared by the backend and frontend.
-## Requirements
 ### Requirement: Backtest workbench requests SHALL use a structured contract with legacy compatibility
 The system SHALL accept an AKQuant-first structured backtest request grouped by market scope, strategy selection, execution settings, transaction costs, and risk controls, while still mapping the supported legacy flat request fields for compatibility.
 
@@ -26,17 +23,6 @@ The system SHALL expose a preset catalog sourced from the AKQuant-backed strateg
 - **WHEN** a preset parameter includes explanation metadata
 - **THEN** the response carries display-ready fields such as grouped parameter placement and help text so the frontend can explain the parameter without duplicating strategy-specific copy
 
-### Requirement: Backtest execution SHALL use a single-symbol A-share ledger model
-The system SHALL execute backtests through the AKQuant runtime and expose its effective execution model, including fill behavior, fees, taxes, slippage, and risk settings, so reports reflect the real third-party engine assumptions used by the application.
-
-#### Scenario: Supported execution mode is used
-- **WHEN** a backtest request specifies a supported execution mode or fill policy
-- **THEN** the backend executes the request through AKQuant and returns the effective execution assumptions in the normalized response
-
-#### Scenario: Stop loss or take profit closes the position
-- **WHEN** a request includes supported stop-loss or take-profit controls that trigger during execution
-- **THEN** the resulting trade and closing reason are reflected in the normalized trade output returned by the backend
-
 ### Requirement: Backtest responses SHALL return structured results and comparison data
 The system SHALL return a normalized response organized around execution assumptions, performance metrics, comparison metrics, series data, trade statistics, trade records, warnings, and derived insights, even though the underlying execution is performed by AKQuant.
 
@@ -50,18 +36,5 @@ The system SHALL return a normalized response organized around execution assumpt
 
 #### Scenario: Client needs richer execution interpretation
 - **WHEN** a backtest run completes successfully through AKQuant
-- **THEN** each symbol result includes explicit assumption and insight sections plus richer trade statistics so the frontend can explain what happened instead of only showing raw returns
+- **THEN** each symbol result includes explicit assumption and insight sections plus richer trade statistics
 - **AND** those explanatory fields use direct-render research language instead of raw runtime jargon
-
-### Requirement: Backtest preset catalog SHALL include event prediction validation
-The AKQuant-backed backtest preset catalog SHALL include a prediction-validation
-preset that helps users test event or theme momentum after market-news
-predictions identify candidate sectors or symbols.
-
-#### Scenario: Client requests preset catalog after prediction integration
-- **WHEN** a client requests backtest presets
-- **THEN** the catalog includes an `event_theme_momentum` preset with summary, use case, risk notes, default params, and grouped parameter schema
-
-#### Scenario: Prediction response includes backtest handoff
-- **WHEN** market-news prediction returns candidate symbols or themes
-- **THEN** the response includes a handoff object pointing to the backtest run endpoint and the prediction-validation preset

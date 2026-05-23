@@ -22,11 +22,11 @@ The system SHALL update the root README and related migration documents to descr
 
 #### Scenario: Developer follows the README
 - **WHEN** a developer reads the root README after this change
-- **THEN** the documentation explains that the frontend now includes an upgraded backtest workbench and a market intelligence page backed by real API calls, while screener and diagnosis remain explicit skeleton capabilities
+- **THEN** the documentation explains that the frontend now includes formal backtest, market, screener, diagnosis, factors, and portfolio workbenches backed by real API calls
 
 #### Scenario: Developer checks migration status details
 - **WHEN** a developer opens the migration document after this change
-- **THEN** it distinguishes migrated pages, migrated backend-only capabilities, and still-unmigrated user flows without overstating what the frontend actually supports
+- **THEN** it distinguishes current workspace boundaries, formal API coverage, and any explicitly limited runtime behavior without overstating incomplete capabilities
 
 ### Requirement: Repository SHALL include an explicit OSS license file
 The system SHALL include an MIT `LICENSE` file so the repository license is unambiguous.
@@ -34,4 +34,3 @@ The system SHALL include an MIT `LICENSE` file so the repository license is unam
 #### Scenario: License file exists at the repository root
 - **WHEN** a developer or automation tool inspects repository metadata
 - **THEN** it finds an MIT license file at the root
-

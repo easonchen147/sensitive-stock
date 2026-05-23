@@ -26,7 +26,7 @@ def test_strategy_presets_expose_summary_and_parameter_help_metadata() -> None:
         item for item in payload["items"] if item["id"] == "event_theme_momentum"
     )
     assert event_momentum["summary"]
-    assert "prediction" in event_momentum["useCase"].lower()
+    assert "预测" in event_momentum["useCase"]
     assert event_momentum["parameterSchema"][0]["group"] == "event"
     assert event_momentum["executionMetadata"]["engine"] == "akquant"
 
@@ -136,7 +136,7 @@ def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_sta
     assert payload["tradeStats"]["netProfit"] == 12000.0
     assert payload["tradeStats"]["exposureRate"] == pytest.approx(0.5)
     assert any(
-        item["label"] == "执行模式" and item["value"] == "next_open"
+        item["label"] == "执行模式" and item["value"] == "次日开盘成交"
         for item in payload["assumptions"]
     )
     assert any(

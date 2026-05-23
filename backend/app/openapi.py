@@ -132,7 +132,7 @@ def build_openapi_document(
             {"name": "platform", "description": "Health, discovery, and capability inventory."},
             {"name": "auth", "description": "Token login and session APIs."},
             {"name": "market", "description": "AkShare market data and Jin10 intelligence APIs."},
-            {"name": "backtests", "description": "AKQuant-backed backtest APIs."},
+            {"name": "backtests", "description": "Quantitative backtest APIs."},
             {"name": "capabilities", "description": "Current research capability runtime status."},
         ],
     }
@@ -308,7 +308,7 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 path=full("/backtests/presets"),
                 tag="backtests",
                 operation_id="listBacktestPresets",
-                summary="Return AKQuant-backed preset strategy metadata.",
+                summary="Return preset strategy metadata for quantitative backtests.",
                 response_schema="#/components/schemas/BacktestPresetCatalogResponse",
             )
         },
@@ -318,7 +318,7 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 path=full("/backtests/run"),
                 tag="backtests",
                 operation_id="runBacktests",
-                summary="Run an AKQuant-backed backtest.",
+                summary="Run a quantitative backtest.",
                 request_schema="#/components/schemas/BacktestRunRequest",
                 response_schema="#/components/schemas/BacktestRunResponse",
             )

@@ -1,10 +1,10 @@
 # prediction-history-and-evaluation Specification
 
 ## Purpose
-TBD - created by archiving change unify-chinese-ui-prediction-loop. Update Purpose after archive.
+Define the local prediction history, detail lookup, evaluation loop, and backtest handoff contract used by the market research workbench.
 ## Requirements
 ### Requirement: Prediction runs SHALL be persisted locally
-The system SHALL persist each market-news prediction response to a local bounded history store with a stable run identifier, prediction identifiers, prediction metadata, source-quality metadata, risk notes, and backtest handoff data.
+The system SHALL persist each market-news prediction response to a local bounded history store with a stable run identifier, prediction identifiers, prediction metadata, source-quality metadata, risk notes, and backtest handoff data suitable for direct frontend rendering.
 
 #### Scenario: Prediction endpoint returns successfully
 - **WHEN** a client calls the market-news prediction endpoint and the backend returns predictions
@@ -51,3 +51,7 @@ The system SHALL evaluate stored predictions when quote data is available and re
 - **WHEN** quote retrieval fails while evaluating a prediction run
 - **THEN** the evaluation endpoint returns pending items with warning metadata instead of failing the entire request
 
+#### Scenario: Prediction response includes backtest handoff guidance
+- **WHEN** market-news prediction returns candidate symbols or themes together with a backtest handoff object
+- **THEN** the persisted run preserves the handoff notes as user-facing research guidance
+- **AND** the handoff does not present prediction output as direct buy or sell guidance

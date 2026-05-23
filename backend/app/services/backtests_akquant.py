@@ -213,11 +213,11 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
     execution_mode = str(settings.get("executionMode") or "close")
     if execution_mode == "next_open":
         execution_detail = (
-            "使用 AKQuant pre-open same_cycle/open fill policy。上一交易日收盘确认的信号，"
-            "会在下一交易日开盘前提交并按当日开盘价执行。"
+            "采用次日开盘成交模式。上一交易日收盘确认的信号，"
+            "会在下一交易日开盘阶段提交，并按当日开盘价执行。"
         )
     else:
-        execution_detail = "使用 AKQuant same_cycle/close fill policy。信号在当前 bar 收盘价执行。"
+        execution_detail = "采用当期收盘成交模式。信号在当前交易周期收盘价执行。"
 
     stop_loss = float(settings.get("stopLoss") or 0.0)
     take_profit = float(settings.get("takeProfit") or 0.0)
@@ -226,6 +226,9 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
         if stop_loss > 0 or take_profit > 0
         else "止损 关闭 / 止盈 关闭"
     )
+    price_basis = "开盘价" if fill_policy.get("priceBasis", "close") == "open" else "收盘价"
+    temporal = fill_policy.get("temporal", "same_cycle")
+    temporal_label = "同周期" if temporal == "same_cycle" else str(temporal)
 
     return [
         {
@@ -235,23 +238,22 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
                 f"{settings.get('engineVersion', '')}"
             ).strip(),
             "detail": (
-                "使用官方 AKQuant runtime 执行回测，"
-                "旧 backtesting.engine 已降级为兼容辅助层。"
+                "回测由官方 AKQuant 引擎执行，"
+                "旧兼容层只负责请求适配与结果整理。"
             ),
         },
         {
             "label": "执行模式",
-            "value": execution_mode,
+            "value": "次日开盘成交" if execution_mode == "next_open" else "当期收盘成交",
             "detail": execution_detail,
         },
         {
             "label": "成交规则",
             "value": (
-                f"{fill_policy.get('priceBasis', 'close')} / "
-                f"offset {fill_policy.get('barOffset', 0)} / "
-                f"{fill_policy.get('temporal', 'same_cycle')}"
+                f"{price_basis} / 偏移 {fill_policy.get('barOffset', 0)} / "
+                f"{temporal_label}"
             ),
-            "detail": "返回的是 AKQuant 最终采用的 fill policy，而不是前端本地推断。",
+            "detail": "这里展示的是回测实际采用的成交规则，而不是前端本地推断结果。",
         },
         {
             "label": "仓位与手数",
@@ -268,13 +270,13 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
                 f"印花税 {float(settings.get('stampTax') or 0.0) * 100:.2f}% / "
                 f"滑点 {float(settings.get('slippage') or 0.0) * 100:.2f}%"
             ),
-            "detail": "费用通过 AKQuant 佣金/税费/滑点参数生效，卖出税费会体现在成交成本里。",
+            "detail": "费用通过佣金、税费与滑点参数生效，卖出税费会体现在成交成本里。",
         },
         {
             "label": "风险控制",
             "value": risk_value,
             "detail": (
-                "止损止盈通过 AKQuant 保护性卖单建模。若保护单在场，信号平仓会先撤保护单，"
+                "止损止盈通过保护性卖单建模。若保护单仍在场，信号平仓会先撤保护单，"
                 "再在下一可成交周期离场。"
             ),
         },

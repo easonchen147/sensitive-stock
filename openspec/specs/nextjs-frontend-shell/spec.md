@@ -29,19 +29,21 @@ The system SHALL provide a backtest page that collects the key inputs required b
 - **WHEN** the backend returns a validation or execution error for an AKQuant-backed backtest request
 - **THEN** the frontend renders a readable error state with the backend message, preserves the user's inputs, and avoids crashing the page
 
-### Requirement: Frontend SHALL discover backend migration status
-The system SHALL query the backend capability inventory and use it to annotate the frontend dashboard and status views so users can distinguish migrated flows from placeholders.
+### Requirement: Frontend SHALL discover backend runtime capability status
+The system SHALL query the backend capability inventory and use it to annotate the frontend dashboard and status views with current product runtime states, so users can understand which modules are ready, limited, or disabled without seeing migration-era language.
 
 #### Scenario: Frontend reads capability inventory
 - **WHEN** the frontend loads its dashboard or status area
-- **THEN** it fetches the backend capability inventory and shows which modules are already migrated in phase one, which modules remain skeletons, and what that means for the current UI
+- **THEN** it fetches the backend capability inventory
+- **AND** it explains the current module status in runtime product language rather than legacy migration labels
 
-### Requirement: Frontend market page SHALL consume migrated backend market intelligence APIs
-The system SHALL provide a market page that reads the migrated backend market and Jin10 intelligence APIs and presents the returned data as a usable market intelligence workspace.
+### Requirement: Frontend market page SHALL consume formal backend market intelligence APIs
+The system SHALL provide a market page that reads the formal backend market and Jin10 intelligence APIs and presents the returned data as a usable market intelligence workspace.
 
 #### Scenario: User opens the market page
 - **WHEN** the user loads the frontend market route
-- **THEN** the page fetches backend market overview, quotes, sectors, latest news, and intelligence data, and renders real source/status metadata instead of a static placeholder
+- **THEN** the page fetches backend market overview, quotes, sectors, latest news, and intelligence data
+- **AND** it renders real source/status metadata instead of static transitional-release copy
 
 #### Scenario: Market data request fails or degrades
 - **WHEN** one or more market or intelligence requests fail or return degraded metadata
@@ -63,11 +65,11 @@ The system SHALL complete the login flow through frontend-controlled session sto
 - **THEN** the frontend clears the invalid session and returns the user to the login flow instead of leaving the app in a partially authenticated state
 
 ### Requirement: Frontend SHALL provide formal workbench pages for screener, diagnosis, factors, and portfolio
-The system SHALL replace placeholder capability pages with formal workbench pages that consume the corresponding backend APIs and present actionable results, empty states, degraded states, and error states.
+The system SHALL render screener, diagnosis, factors, and portfolio pages as formal workbenches that consume the corresponding backend APIs and present actionable results, empty states, degraded states, and error states.
 
-#### Scenario: User opens a newly completed capability page
-- **WHEN** a user opens `/screener`, `/diagnosis`, `/factors`, or `/portfolio` after this change
-- **THEN** the frontend loads the corresponding backend data contract and renders a real workbench instead of a placeholder brief
+#### Scenario: User opens a completed capability page
+- **WHEN** a user opens `/screener`, `/diagnosis`, `/factors`, or `/portfolio`
+- **THEN** the frontend loads the corresponding backend data contract and renders a real workbench rather than a static brief
 
 #### Scenario: Workbench request fails or degrades
 - **WHEN** a backend request for one of the newly completed capability pages fails or returns degraded metadata
@@ -78,7 +80,7 @@ The system SHALL render login, dashboard, backtest, market, screener, diagnosis,
 
 #### Scenario: User opens a formal workbench page
 - **WHEN** a user opens any major capability page after this change
-- **THEN** the page presents a formal workbench with structured controls, results, and explanation surfaces instead of a placeholder-oriented or page-specific ad hoc layout
+- **THEN** the page presents a formal workbench with structured controls, results, and explanation surfaces instead of a transitional or page-specific ad hoc layout
 
 ### Requirement: Frontend SHALL use the Next.js 16 proxy convention for protected route gating
 The system SHALL expose the protected application route gate through `proxy.ts` with an exported `proxy` function so the frontend follows the Next.js 16 routing boundary convention.

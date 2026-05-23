@@ -43,7 +43,7 @@ Backend public API facts:
 - Business APIs other than health, OpenAPI discovery, and login require
   bearer-token authentication.
 - Screener, diagnosis, factors, and portfolio are formal API/workbench surfaces,
-  not placeholder-only routes.
+  not transitional route markers.
 
 Frontend contract and design facts:
 

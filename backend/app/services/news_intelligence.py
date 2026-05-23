@@ -523,8 +523,8 @@ class MarketNewsIntelligenceService:
                 "volume_multiplier": 1.2,
             },
             "notes": [
-                "Use this handoff to validate prediction candidates through AKQuant backtests.",
-                "Predictions are research hints and should not be treated as trading instructions.",
+                "可将这里的候选标的直接交给量化回测，用事件主题动量策略做二次验证。",
+                "预测结果只用于研究判断与复盘，不应被视为直接交易指令。",
             ],
         }
 

@@ -24,10 +24,10 @@ uv run python scripts/generate_openapi.py
 ```
 
 The contract covers auth, capabilities, market data, AKQuant-backed backtests,
-and the current screener, diagnosis, factors, and portfolio capability
-endpoints.
+prediction-loop APIs, and the current screener, diagnosis, factors, and
+portfolio capability endpoints.
 
-The four former skeleton capability families now have formal API routes:
+The research capability families now have formal API routes:
 
 - `POST /api/v1/screener/run`
 - `POST /api/v1/diagnosis/run`
@@ -36,8 +36,8 @@ The four former skeleton capability families now have formal API routes:
 
 ## Frontend Contract And Design Boundary
 
-The frontend has been upgraded from mixed placeholder pages into a unified
-research workbench surface. The active design direction is Quiet Capital
+The frontend has been upgraded into a unified research workbench surface. The
+active design direction is Quiet Capital
 Terminal: dense, low-noise, status-forward layouts suited for A-share research
 instead of marketing-style hero pages.
 

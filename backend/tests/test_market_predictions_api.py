@@ -117,13 +117,17 @@ class StubNewsPredictionService:
                     "sourceIds": ["news-1"],
                 }
             ],
-            "predictionSummary": "stub prediction",
-            "riskNotes": ["Validate with backtests."],
+            "predictionSummary": "测试预测摘要",
+            "riskNotes": ["建议继续用量化回测验证。"],
             "backtestHandoff": {
                 "endpoint": "/api/v1/backtests/run",
                 "suggestedPreset": "event_theme_momentum",
                 "symbols": symbols or [],
                 "defaultParams": {"lookback_window": 20},
+                "notes": [
+                    "可将这里的候选标的直接交给量化回测，用事件主题动量策略做二次验证。",
+                    "预测结果只用于研究判断与复盘，不应被视为直接交易指令。",
+                ],
             },
         }
 
@@ -161,6 +165,7 @@ def test_market_news_predictions_endpoint_returns_prediction_payload(tmp_path: P
     assert payload["predictions"][0]["target"] == "AI infrastructure"
     assert payload["backtestHandoff"]["suggestedPreset"] == "event_theme_momentum"
     assert payload["backtestHandoff"]["symbols"] == ["000001", "600000"]
+    assert "量化回测" in payload["backtestHandoff"]["notes"][0]
 
     history_response = client.get("/api/v1/market/news/prediction-history", headers=headers)
     assert history_response.status_code == 200

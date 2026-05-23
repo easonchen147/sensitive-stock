@@ -16,7 +16,7 @@ test("login page renders without an authenticated session", async ({ page }) => 
 
   await expect(page.locator(".auth-card")).toBeVisible();
   await expect(page.locator(".hero-title")).toContainText("敏感股票研究台");
-  await expect(page.locator("#username")).toHaveValue("admin");
+  await expect(page.locator("#username")).toHaveValue("");
   await expect(page.locator("#password")).toBeVisible();
 });
 

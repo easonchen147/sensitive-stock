@@ -87,7 +87,7 @@ def test_prediction_calls_deepseek_v4_flash_and_parses_json_response() -> None:
                     "content": json.dumps(
                         {
                             "summary": "AI infrastructure remains the strongest theme.",
-                            "riskNotes": ["Validate with backtests."],
+                            "riskNotes": ["建议继续用量化回测验证。"],
                             "predictions": [
                                 {
                                     "targetType": "sector",
@@ -141,7 +141,7 @@ def test_prediction_reuses_cached_deepseek_payload_for_equivalent_context() -> N
                     "content": json.dumps(
                         {
                             "summary": "AI infrastructure remains active.",
-                            "riskNotes": ["Validate with backtests."],
+                            "riskNotes": ["建议继续用量化回测验证。"],
                             "predictions": [
                                 {
                                     "targetType": "sector",
@@ -184,7 +184,7 @@ def test_prediction_cache_key_changes_when_symbols_change() -> None:
                     "content": json.dumps(
                         {
                             "summary": "AI infrastructure remains active.",
-                            "riskNotes": ["Validate with backtests."],
+                            "riskNotes": ["建议继续用量化回测验证。"],
                             "predictions": [
                                 {
                                     "targetType": "sector",
@@ -229,7 +229,7 @@ def test_prediction_sends_disabled_thinking_without_reasoning_effort() -> None:
                     "content": json.dumps(
                         {
                             "summary": "AI infrastructure remains active.",
-                            "riskNotes": ["Validate with backtests."],
+                            "riskNotes": ["建议继续用量化回测验证。"],
                             "predictions": [
                                 {
                                     "targetType": "sector",

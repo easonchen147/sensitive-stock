@@ -39,12 +39,12 @@ The system SHALL implement a unified Chinese research-terminal visual style base
 - **WHEN** a formal page is rendered in a mobile viewport
 - **THEN** Chinese text, buttons, tables, and state surfaces do not overlap or overflow their containers incoherently
 
-### Requirement: Frontend SHALL not show migration-era or unsupported feature labels
-The system SHALL only show page features that are backed by a real backend route, frontend OpenAPI binding, or local authentication route. Migration-era tags and placeholder semantics SHALL NOT appear in user-facing navigation, dashboard cards, status chips, empty states, or workbench result panels.
+### Requirement: Frontend SHALL not show transitional or unsupported feature labels
+The system SHALL only show page features that are backed by a real backend route, frontend OpenAPI binding, or local authentication route. Transitional release tags and non-operational feature semantics SHALL NOT appear in user-facing navigation, dashboard cards, status chips, empty states, or workbench result panels.
 
 #### Scenario: User opens protected product pages
 - **WHEN** a user opens `/`, `/market`, `/backtests`, `/screener`, `/diagnosis`, `/factors`, or `/portfolio`
-- **THEN** visible UI contains no “已迁移”, “已接入”, “骨架中”, “规划中”, or equivalent migration-status copy
+- **THEN** visible UI contains no transition-status copy
 
 #### Scenario: Feature entry is visible
 - **WHEN** a navigation item, dashboard entry, form action, or result panel is visible
