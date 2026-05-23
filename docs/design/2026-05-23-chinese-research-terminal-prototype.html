@@ -6,29 +6,25 @@
   <title>敏感股票研究台 原型</title>
   <style>
     :root {
-      --ink: #13201b;
-      --muted: #68766c;
-      --paper: #f7f8f3;
-      --paper-2: #eef3ec;
-      --line: #d7ded4;
-      --green: #286b54;
-      --green-2: #dcebe2;
-      --copper: #b66d43;
-      --slate: #20313b;
-      --warn: #a54d3a;
-      --good: #1d7a55;
-      --shadow: 0 24px 60px rgba(20, 32, 27, .12);
+      --ink: #17202a;
+      --muted: #64707d;
+      --paper: #ffffff;
+      --paper-2: #f7f9fb;
+      --line: #d8e0e7;
+      --blue: #235c7a;
+      --blue-2: #e2edf4;
+      --copper: #b04d31;
+      --slate: #111b26;
+      --warn: #b04d31;
+      --good: #147a5c;
+      --shadow: 0 22px 54px rgba(17, 27, 38, .14);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       color: var(--ink);
-      background:
-        linear-gradient(var(--line) 1px, transparent 1px),
-        linear-gradient(90deg, var(--line) 1px, transparent 1px),
-        #f0f3ed;
-      background-size: 34px 34px;
-      font-family: "Noto Serif SC", "Source Han Serif SC", "Microsoft YaHei", serif;
+      background: #eef2f5;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
     }
     .board {
       display: grid;
@@ -36,8 +32,8 @@
       min-height: 100vh;
     }
     .rail {
-      background: linear-gradient(180deg, #0f2228, #13251f);
-      color: #f1eadb;
+      background: linear-gradient(180deg, #17283a, #111b26);
+      color: #f5f8fb;
       padding: 28px 22px;
       display: grid;
       align-content: start;
@@ -47,7 +43,6 @@
       font-size: 26px;
       line-height: 1.15;
       font-weight: 800;
-      letter-spacing: .06em;
     }
     .rail p { color: #c5d0c8; line-height: 1.7; margin: 0; }
     .swatches, .icons { display: grid; gap: 10px; }
@@ -74,9 +69,9 @@
     }
     .screen {
       min-width: 0;
-      border: 1px solid #aeb9ae;
+      border: 1px solid var(--line);
       border-radius: 8px;
-      background: rgba(253, 254, 249, .96);
+      background: rgba(255, 255, 255, .96);
       box-shadow: var(--shadow);
       overflow: hidden;
     }
@@ -85,7 +80,7 @@
       padding: 10px 14px;
       border-bottom: 1px solid var(--line);
       font-weight: 800;
-      background: #fbfcf7;
+      background: #fbfcfd;
     }
     .login-layout {
       display: grid;
@@ -95,9 +90,7 @@
     .ink-art {
       display: grid;
       place-items: center;
-      background:
-        radial-gradient(circle at 50% 38%, rgba(40,107,84,.16), transparent 35%),
-        linear-gradient(135deg, #fbfcf7, #eef3ec);
+      background: linear-gradient(135deg, #f7f9fb, #e7eef5);
       color: rgba(19,32,27,.42);
       font-size: 92px;
     }
@@ -111,7 +104,7 @@
       height: 38px;
       border: 1px solid var(--line);
       border-radius: 4px;
-      background: #fffefa;
+      background: #ffffff;
       color: var(--muted);
       padding: 9px 11px;
       font-size: 13px;
@@ -143,7 +136,7 @@
       border-radius: 5px;
       color: var(--muted);
     }
-    .nav-item.active { background: var(--green-2); color: var(--green); font-weight: 800; }
+    .nav-item.active { background: var(--blue-2); color: var(--blue); font-weight: 800; }
     .main {
       padding: 16px;
       display: grid;
@@ -169,7 +162,7 @@
     .metric, .card, .panel, .task {
       border: 1px solid var(--line);
       border-radius: 6px;
-      background: #fffefa;
+      background: #ffffff;
       padding: 10px;
     }
     .metric small, .card small, .task small {
@@ -201,14 +194,14 @@
       border: 1px solid var(--line);
       border-radius: 5px;
     }
-    .bars i { flex: 1; background: var(--green); opacity: .78; border-radius: 2px 2px 0 0; }
+    .bars i { flex: 1; background: var(--good); opacity: .78; border-radius: 2px 2px 0 0; }
     .right {
       border-left: 1px solid var(--line);
       padding: 14px;
       display: grid;
       align-content: start;
       gap: 10px;
-      background: #fbfcf7;
+      background: #fbfcfd;
     }
     .table { display: grid; gap: 6px; font-size: 12px; }
     .tr {
@@ -225,8 +218,8 @@
       border: 1px solid var(--line);
       border-radius: 4px;
       padding: 4px 6px;
-      color: var(--green);
-      background: var(--green-2);
+      color: var(--blue);
+      background: var(--blue-2);
       font-size: 11px;
       font-weight: 800;
     }
@@ -244,7 +237,7 @@
       min-height: 210px;
       border: 4px solid #1d2b30;
       border-radius: 22px;
-      background: #fbfcf7;
+      background: #fbfcfd;
       color: var(--ink);
       padding: 16px 10px;
       font-size: 10px;
@@ -373,7 +366,7 @@
         <article class="screen">
           <div class="screen-title">04 回测控制台</div>
           <div class="main">
-            <div class="topline"><h2>回测验证</h2><span class="tag">AKQuant</span></div>
+            <div class="topline"><h2>回测验证</h2><span class="tag">量化引擎</span></div>
             <div class="content-grid">
               <div class="panel">
                 <small>回测参数</small>
@@ -397,7 +390,7 @@
         <article class="screen">
           <div class="screen-title">05 选股/诊股/因子/组合研究页</div>
           <div class="main">
-            <div class="topline"><h2>选股研究</h2><span class="tag">已迁移</span></div>
+            <div class="topline"><h2>选股研究</h2><span class="tag">可用</span></div>
             <div class="content-grid">
               <div class="table">
                 <div class="tr"><strong>代码</strong><strong>评分</strong><strong>操作</strong></div>

@@ -9,6 +9,7 @@ import {
   displayText,
   displayTone,
   displayTradeAction,
+  displayWorkflowStatus,
 } from "@/lib/display";
 import {
   applyQuickProfile,
@@ -287,7 +288,7 @@ export function BacktestConsole() {
 
             <FormSection
               title="策略与参数"
-              description="预设模式从后端动态读取参数 schema；自定义模式继续遵循 generate_signals(data, ctx) 契约。"
+              description="预设模式从后端动态读取参数说明；自定义模式继续遵循策略函数契约。"
             >
               <div className="field-row">
                 <div className="field-grid">
@@ -513,7 +514,7 @@ export function BacktestConsole() {
 
             <div className="submit-row">
               <div className="submit-note">
-                后端会先校验 schema，再通过 AKQuant 运行适配器执行回测。前端会保留输入，不会在失败时清空表单。
+                后端会先校验请求结构，再通过回测适配器执行。前端会保留输入，不会在失败时清空表单。
               </div>
               <button className="primary-button" disabled={loading} type="submit">
                 {loading ? "运行中" : "运行回测"}
@@ -548,7 +549,7 @@ export function BacktestConsole() {
 
           {currentPreset ? (
             <div className="status-list">
-              <div className="status-item" data-status="migrated">
+              <div className="status-item" data-status="ready">
                 <div className="status-head">
                   <strong>预设重点</strong>
                   <span className="status-pill">{currentPreset.label}</span>
@@ -564,14 +565,14 @@ export function BacktestConsole() {
                   </p>
                 ) : null}
               </div>
-              <div className="status-item" data-status="migrated">
+              <div className="status-item" data-status="ready">
                 <div className="status-head">
                   <strong>适用场景</strong>
                   <span className="status-pill">说明</span>
                 </div>
                 <p>{currentPreset.useCase}</p>
               </div>
-              <div className="status-item" data-status="skeleton">
+              <div className="status-item" data-status="limited">
                 <div className="status-head">
                   <strong>风险提示</strong>
                   <span className="status-pill">关注</span>
@@ -602,7 +603,7 @@ export function BacktestConsole() {
           <StateSurface
             state="empty"
             title="还没有回测结果。"
-            detail="先配置策略与执行假设，提交后这里会展示多标的结果卡、假设摘要、relative benchmark insight 和最近成交记录。"
+            detail="先配置策略与执行假设，提交后这里会展示多标的结果卡、假设摘要、相对基准洞察和最近成交记录。"
           />
         )}
       </article>
@@ -646,7 +647,7 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
               <h3>{item.symbol}</h3>
               <p>
                 {item.settings.strategyLabel} · {displayExecutionMode(item.settings.executionMode)} ·{" "}
-                {item.settings.engine || "akquant"} {item.settings.engineVersion || ""}
+                {displayWorkflowStatus(item.settings.engine || "akquant")} {item.settings.engineVersion || ""}
               </p>
             </div>
             <div className="tag-row">

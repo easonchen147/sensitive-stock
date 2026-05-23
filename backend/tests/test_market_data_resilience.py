@@ -107,7 +107,7 @@ def test_market_quote_fallback_marks_payload_as_degraded() -> None:
 
     assert payload["source"] == "eastmoney_direct"
     assert payload["degraded"] is True
-    assert "akshare quote source unavailable" in payload["warnings"][0]
+    assert "主行情报价源暂不可用" in payload["warnings"][0]
     assert payload["items"][0]["symbol"] == "000001"
 
 
@@ -124,7 +124,22 @@ def test_market_quote_refresh_failure_returns_cached_degraded_payload() -> None:
     assert first_payload["items"][0]["symbol"] == "000001"
     assert cached_payload["degraded"] is True
     assert cached_payload["items"][0]["symbol"] == "000001"
-    assert any("using cached market data" in warning for warning in cached_payload["warnings"])
+    assert any("已使用缓存行情数据" in warning for warning in cached_payload["warnings"])
+
+
+def test_market_quote_failure_without_cache_returns_degraded_empty_payload() -> None:
+    service = AkshareMarketDataService(
+        akshare_client=FailingAkshareClient(),
+        session=SequencedSession([RuntimeError("eastmoney down")]),
+        retry_attempts=1,
+    )
+
+    payload = service.get_quotes(["000001"])
+
+    assert payload["source"] == "unavailable"
+    assert payload["degraded"] is True
+    assert payload["items"] == []
+    assert any("暂未获得可用行情数据" in warning for warning in payload["warnings"])
 
 
 def test_market_sector_refresh_failure_returns_cached_degraded_payload() -> None:
@@ -140,4 +155,20 @@ def test_market_sector_refresh_failure_returns_cached_degraded_payload() -> None
     assert first_payload["items"][0]["name"] == "Computing"
     assert cached_payload["degraded"] is True
     assert cached_payload["items"][0]["name"] == "Computing"
-    assert any("using cached market data" in warning for warning in cached_payload["warnings"])
+    assert any("已使用缓存行情数据" in warning for warning in cached_payload["warnings"])
+
+
+def test_market_sector_failure_without_cache_returns_degraded_empty_payload() -> None:
+    service = AkshareMarketDataService(
+        akshare_client=FailingAkshareClient(),
+        session=SequencedSession([RuntimeError("eastmoney down")]),
+        retry_attempts=1,
+    )
+
+    payload = service.get_hot_sectors(limit=1, sector_type="concept")
+
+    assert payload["source"] == "unavailable"
+    assert payload["degraded"] is True
+    assert payload["sectorType"] == "concept"
+    assert payload["items"] == []
+    assert any("暂未获得可用行情数据" in warning for warning in payload["warnings"])

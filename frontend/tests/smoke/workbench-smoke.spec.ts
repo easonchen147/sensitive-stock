@@ -27,13 +27,23 @@ test("protected pages redirect unauthenticated users to login", async ({ page })
   await expect(page.locator(".auth-card")).toBeVisible();
 });
 
-test("authenticated user can enter dashboard and representative workbenches", async ({ page }) => {
+const protectedWorkbenchPages = [
+  ["/backtests", "量化回测台", "提交前快速复核"],
+  ["/market", "行情与快讯工作台", "复盘历史"],
+  ["/screener", "条件选股工作台", "运行一次选股后查看候选标的。"],
+  ["/diagnosis", "结构化诊股工作台", "生成报告后查看结构化段落。"],
+  ["/factors", "因子分析工作台", "运行因子分析后查看排名。"],
+  ["/portfolio", "组合优化工作台", "运行组合优化后查看目标权重。"],
+] as const;
+
+test("authenticated user can enter dashboard and all research workbenches", async ({ page }) => {
   await login(page);
 
-  for (const route of ["/backtests", "/screener", "/market"]) {
+  for (const [route, title, representativeEntry] of protectedWorkbenchPages) {
     await page.goto(route);
     await expect(page.locator(".workbench-hero")).toBeVisible();
-    await expect(page.locator(".hero-title")).toBeVisible();
+    await expect(page.locator(".hero-title")).toContainText(title);
+    await expect(page.getByText(representativeEntry)).toBeVisible();
   }
 
   await page.goto("/market");

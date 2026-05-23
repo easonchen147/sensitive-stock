@@ -13,7 +13,7 @@ class PortfolioOptimizationService:
 
     def describe(self) -> dict[str, Any]:
         return {
-            "status": "migrated",
+            "status": "ready",
             "objectives": ["equal_weight", "minimum_variance", "maximum_sharpe", "risk_parity"],
             "metadata": {"source": "akshare", "degraded": False},
         }
@@ -54,7 +54,7 @@ class PortfolioOptimizationService:
             "metadata": {
                 "source": "akshare",
                 "degraded": not bool(metrics),
-                "warnings": ["portfolio metrics unavailable"] if not metrics else [],
+                "warnings": ["组合统计指标暂不可用"] if not metrics else [],
             },
         }
 

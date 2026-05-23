@@ -12,7 +12,7 @@ class DiagnosisService:
 
     def describe(self) -> dict[str, Any]:
         return {
-            "status": "migrated",
+            "status": "ready",
             "sections": ["market_context", "technical_indicators", "risk_notes", "conclusion"],
             "metadata": {"source": "akshare", "degraded": False},
         }
@@ -33,7 +33,7 @@ class DiagnosisService:
                 unavailable_inputs.append("latest_quote")
         except Exception as error:  # pragma: no cover - exercised through API behavior
             unavailable_inputs.append("latest_quote")
-            warnings.append(f"market quote source unavailable: {error}")
+            warnings.append(f"行情报价源暂不可用：{error}")
 
         price = _to_float(quote.get("price"))
         change_percent = _to_float(quote.get("changePercent"))
@@ -52,42 +52,41 @@ class DiagnosisService:
             "indicators": [
                 {
                     "name": "intraday_momentum",
-                    "label": "Intraday momentum",
+                    "label": "日内动量",
                     "value": change_percent,
                     "tone": trend_tone,
                 },
                 {
                     "name": "risk_level",
-                    "label": "Risk level",
+                    "label": "风险等级",
                     "value": risk_level,
                     "tone": "warning" if risk_level == "elevated" else "neutral",
                 },
             ],
             "sections": [
                 {
-                    "title": "Market context",
+                    "title": "行情背景",
                     "tone": trend_tone,
                     "summary": (
-                        f"{request.symbol} latest quote is {price:.2f}, "
-                        f"with changePercent {change_percent:.2f}%."
+                        f"{request.symbol} 最新报价 {price:.2f}，涨跌幅 {change_percent:.2f}%。"
                     ),
                 },
                 {
-                    "title": "Technical read",
+                    "title": "技术观察",
                     "tone": trend_tone,
                     "summary": (
-                        "Momentum is positive." if change_percent >= 0 else "Momentum is weak."
+                        "短线动量偏强。" if change_percent >= 0 else "短线动量偏弱。"
                     ),
                 },
                 {
-                    "title": "Action note",
+                    "title": "研究提示",
                     "tone": "neutral",
-                    "summary": "Use this report as research context, not as investment advice.",
+                    "summary": "本报告只作为研究上下文，不构成投资建议。",
                 },
             ],
             "riskNotes": [
-                "Short-term quote data can be noisy.",
-                "Validate any diagnosis with backtesting and broader market context.",
+                "短期报价数据可能存在噪声。",
+                "诊断结论需要结合回测结果和更宽的市场背景验证。",
             ],
             "metadata": {
                 "source": source,

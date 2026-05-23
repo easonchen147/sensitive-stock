@@ -281,7 +281,7 @@ export function FactorWorkbench() {
         <div className="status-list">
           {result?.rankedFactors.length ? (
             result.rankedFactors.map((item) => (
-            <div className="status-item" data-status="migrated" key={item.name}>
+            <div className="status-item" data-status="ready" key={item.name}>
               <div className="status-head">
                 <strong>{item.name}</strong>
                 <span className="status-pill">{item.ic.toFixed(3)}</span>
@@ -365,7 +365,7 @@ export function PortfolioWorkbench() {
         <div className="status-list">
           {result?.allocations.length ? (
             result.allocations.map((item) => (
-            <div className="status-item" data-status="migrated" key={item.symbol}>
+            <div className="status-item" data-status="ready" key={item.symbol}>
               <div className="status-head">
                 <strong>{item.symbol}</strong>
                 <span className="status-pill">{(item.weight * 100).toFixed(2)}%</span>

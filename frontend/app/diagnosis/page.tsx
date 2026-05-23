@@ -10,9 +10,9 @@ export default async function DiagnosisPage() {
       <WorkbenchHero
         eyebrow="诊股报告"
         title="结构化诊股工作台"
-        description="把行情上下文、技术指标、报告段落、风险提示和降级 metadata 放在同一张研究报告里。"
+        description="把行情上下文、技术指标、报告段落、风险提示和降级说明放在同一张研究报告里。"
         metrics={[
-          { label: "接口", value: "/diagnosis/run", note: "正式后端接口" },
+          { label: "执行链路", value: "诊股报告", note: "受保护服务" },
           { label: "状态", value: "可降级", note: "部分报告仍可检查" },
         ]}
         meta={["行情上下文", "指标摘要", "风险提示"]}

@@ -84,7 +84,7 @@ def test_jin10_news_service_returns_cached_payload_when_all_sources_fail() -> No
     assert first_payload["source"] == "jin10_flash_api"
     assert cached_payload["degraded"] is True
     assert cached_payload["items"][0]["id"] == first_payload["items"][0]["id"]
-    assert any("using cached news" in warning for warning in cached_payload["warnings"])
+    assert any("已使用缓存资讯" in warning for warning in cached_payload["warnings"])
 
 
 def test_news_intelligence_preserves_cached_degraded_metadata() -> None:

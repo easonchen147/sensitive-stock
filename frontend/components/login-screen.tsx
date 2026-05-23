@@ -38,9 +38,9 @@ export function LoginScreen() {
     <section className="auth-screen">
       <article className="auth-card">
         <div className="eyebrow">内部访问</div>
-        <h1 className="hero-title">登录后进入敏感股票研究台。</h1>
+        <h1 className="hero-title">登录敏感股票研究台</h1>
         <p className="hero-copy">
-          当前仅提供一套内部管理员账号用于 MVP 验证。这个登录边界是最小可用方案，不代表完整账户系统已经建立。
+          当前仅提供内部管理员账号访问研究终端。登录后可以使用行情情报、预测复盘、回测验证和研究工具。
         </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -75,7 +75,7 @@ export function LoginScreen() {
         </form>
 
         <div className="auth-note">
-          暂不提供注册、找回密码、多角色和权限后台。本轮只建立登录与统一 token 鉴权边界。
+          暂不提供注册、找回密码、多角色和权限后台；本轮只保留登录与统一访问凭证边界。
         </div>
       </article>
     </section>

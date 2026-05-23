@@ -4,47 +4,46 @@ CAPABILITIES = [
     {
         "name": "backtest",
         "label": "股票回测",
-        "status": "migrated",
+        "status": "ready",
         "path": "/api/v1/backtests/run",
-        "summary": "已迁通 AKQuant-backed 回测主链路，可从前端调用 Flask API 执行结构化回测。",
+        "summary": "回测主链路可调用，支持策略预设、执行假设、交易成本、风控参数和结构化结果。",
     },
     {
         "name": "screener",
         "label": "条件选股",
-        "status": "migrated",
+        "status": "ready",
         "path": "/api/v1/screener/run",
-        "summary": "已提供结构化条件、自然语言解释、结果导出与回测回灌契约。",
+        "summary": "选股接口可调用，支持结构化条件、自然语言解释、结果导出与回测交接。",
     },
     {
         "name": "market",
         "label": "行情中心",
-        "status": "migrated",
+        "status": "ready",
         "path": "/api/v1/market",
         "summary": (
-            "已提供 backend 侧 AkShare 市场数据与 Jin10 新闻 intelligence API，"
-            "前端深度页面仍待继续迁移。"
+            "行情、板块、资讯、情报、预测历史、详情和评估接口均可通过统一接口访问。"
         ),
     },
     {
         "name": "diagnosis",
-        "label": "AI 诊股",
-        "status": "migrated",
+        "label": "智能诊股",
+        "status": "ready",
         "path": "/api/v1/diagnosis/run",
-        "summary": "已提供行情上下文、指标摘要、结构化诊断报告与降级 metadata。",
+        "summary": "诊股接口可调用，返回行情上下文、指标摘要、结构化诊断段落和风险提示。",
     },
     {
         "name": "factors",
         "label": "因子分析",
-        "status": "migrated",
+        "status": "ready",
         "path": "/api/v1/factors/analyze",
-        "summary": "已封装保留因子模块为正式 API，返回最新因子、IC 排名与分析窗口。",
+        "summary": "因子接口可调用，返回最新因子、相关性排名与分析窗口。",
     },
     {
         "name": "portfolio",
         "label": "组合优化",
-        "status": "migrated",
+        "status": "ready",
         "path": "/api/v1/portfolio/optimize",
-        "summary": "已封装组合优化模块为正式 API，返回权重、统计指标与优化 metadata。",
+        "summary": "组合接口可调用，返回目标权重、统计指标、优化目标与风险信息。",
     },
 ]
 

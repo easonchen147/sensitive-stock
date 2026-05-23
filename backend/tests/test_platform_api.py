@@ -20,7 +20,7 @@ def test_health_endpoint_returns_service_metadata() -> None:
     }
 
 
-def test_capability_inventory_lists_migrated_and_placeholder_modules() -> None:
+def test_capability_inventory_lists_runtime_ready_modules() -> None:
     app = create_app({"TESTING": True, **auth_test_config()})
     client = app.test_client()
     headers = issue_auth_headers(client)
@@ -30,7 +30,7 @@ def test_capability_inventory_lists_migrated_and_placeholder_modules() -> None:
     assert response.status_code == 200
     payload = response.get_json()
     items = {item["name"]: item for item in payload["items"]}
-    assert items["backtest"]["status"] == "migrated"
-    assert items["market"]["status"] == "migrated"
-    assert items["screener"]["status"] == "migrated"
+    assert items["backtest"]["status"] == "ready"
+    assert items["market"]["status"] == "ready"
+    assert items["screener"]["status"] == "ready"
     assert items["screener"]["path"] == "/api/v1/screener/run"

@@ -430,7 +430,7 @@ export function MarketWorkbench() {
           <div className="status-list">
             {sectors.length ? (
               sectors.map((item) => (
-                <div className="status-item" data-status="migrated" key={`${item.type}-${item.name}`}>
+                <div className="status-item" data-status="ready" key={`${item.type}-${item.name}`}>
                   <div className="status-head">
                     <strong>{item.name}</strong>
                     <span
@@ -543,7 +543,7 @@ export function MarketWorkbench() {
           <div className="status-list">
             {sectorHints.length ? (
               sectorHints.slice(0, 6).map((item) => (
-                <div className="status-item" data-status="migrated" key={`${item.boardType}-${item.name}`}>
+                <div className="status-item" data-status="ready" key={`${item.boardType}-${item.name}`}>
                   <div className="status-head">
                     <strong>{item.name}</strong>
                     <span className="status-pill">评分 {item.score}</span>
@@ -567,7 +567,7 @@ export function MarketWorkbench() {
               <div className="eyebrow">预测详情</div>
               <h2 className="panel-title">多源资讯预测与回测交接</h2>
               <p className="panel-subtitle">
-                后端优先使用 DeepSeek V4 Flash；未配置密钥或模型失败时会明确降级到本地启发式预测，并保留回测交接参数。
+                后端优先使用深度求索快速模型；未配置密钥或模型失败时会明确降级到本地启发式预测，并保留回测交接参数。
               </p>
             </div>
           </div>
@@ -663,7 +663,7 @@ export function MarketWorkbench() {
                     </span>
                   </div>
                   <p>
-                    {displayText(run.model, "未知模型")} · {displayThinkingType(run.thinkingType)} ·
+                    {displayWorkflowStatus(run.model || "未知模型")} · {displayThinkingType(run.thinkingType)} ·
                     质量 {displayQualityScore(run.qualityScore)}
                   </p>
                   {run.summary ? <p>{run.summary}</p> : null}
@@ -690,12 +690,12 @@ function PredictionMetadataPanel({ metadata }: { metadata: MarketPredictionMetad
     <div className="metric-grid">
       <MetricCard
         label="预测提供方"
-        value={displayText(metadata.provider)}
+        value={displayWorkflowStatus(metadata.provider)}
         note={metadata.degraded ? "降级路径" : displayWorkflowStatus(metadata.requestMode || "remote")}
       />
       <MetricCard
         label="模型"
-        value={metadata.model}
+        value={displayWorkflowStatus(metadata.model)}
         note={`${displayThinkingType(metadata.thinkingType)} / ${displayReasoningEffort(
           metadata.reasoningEffort,
         )}`}
@@ -763,7 +763,7 @@ function PredictionDetailCard({
       <div className="status-list">
         {evidenceItems.length ? (
           evidenceItems.slice(0, 4).map((item) => (
-            <div className="status-item" data-status="migrated" key={item.id}>
+            <div className="status-item" data-status="ready" key={item.id}>
               <div className="news-meta">
                 <span>{item.source}</span>
                 <span>{item.publishedAt}</span>
@@ -802,7 +802,7 @@ function EvaluationPanel({ evaluation }: { evaluation: MarketPredictionEvaluatio
       </div>
       <div className="status-list">
         {evaluation.evaluationItems.map((item) => (
-          <div className="status-item" data-status={item.status === "miss" ? "skeleton" : "migrated"} key={item.predictionId}>
+          <div className="status-item" data-status={item.status === "miss" ? "limited" : "ready"} key={item.predictionId}>
             <div className="status-head">
               <strong>{item.target}</strong>
               <span className="status-pill">{displayEvaluationStatus(item.status)}</span>

@@ -23,3 +23,11 @@ The generated OpenAPI schemas SHALL describe run identifiers, prediction identif
 #### Scenario: Evaluation schema is inspected
 - **WHEN** a client reads the prediction evaluation schema
 - **THEN** it can discover evaluation summary fields and per-prediction evaluation statuses
+
+### Requirement: OpenAPI SHALL describe runtime capability states
+The generated OpenAPI document SHALL describe capability inventory status as runtime product states instead of migration states.
+
+#### Scenario: Capability schema is inspected
+- **WHEN** a client reads the `Capability` schema
+- **THEN** status values are `ready`, `limited`, or `disabled`
+- **AND** the schema does not expose `migrated`, `skeleton`, `planned`, or placeholder response schemas

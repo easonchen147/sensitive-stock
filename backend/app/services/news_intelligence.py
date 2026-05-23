@@ -68,7 +68,7 @@ class Jin10NewsService:
             try:
                 items = self._fetch_latest_from_public_feed(requested_limit)
                 warning = (
-                    "jin10 flash api unavailable; using public feed: "
+                    "金十快讯接口暂不可用，已切换公开快讯源："
                     f"{_format_error(primary_error)}"
                 )
                 payload = {
@@ -84,7 +84,7 @@ class Jin10NewsService:
                     raise
                 return self._as_degraded_cache_payload(
                     cached,
-                    f"jin10 refresh failed; using cached news: {_format_error(fallback_error)}",
+                    f"快讯刷新失败，已使用缓存资讯：{_format_error(fallback_error)}",
                 )
 
         self._latest_cache.set(cache_key, payload)
@@ -320,7 +320,7 @@ class MultiSourceNewsService:
                 }
             )
         except Exception as error:
-            warning = f"Jin10 channel failed: {_format_error(error)}"
+            warning = f"金十渠道失败：{_format_error(error)}"
             warnings.append(warning)
             channels.append(
                 {
@@ -348,7 +348,7 @@ class MultiSourceNewsService:
             except Exception as error:
                 warning = (
                     f"{getattr(source, 'name', getattr(source, 'source', 'unknown'))} "
-                    f"channel failed: {_format_error(error)}"
+                    f"渠道失败：{_format_error(error)}"
                 )
                 warnings.append(warning)
                 channels.append(
@@ -366,10 +366,10 @@ class MultiSourceNewsService:
         if not deduped:
             cached = self._latest_cache.get(cache_key)
             if cached is None:
-                raise RuntimeError("all market news channels failed")
+                raise RuntimeError("全部市场资讯渠道失败")
             return self._as_degraded_cache_payload(
                 cached,
-                "all market news channels failed; using cached aggregate news",
+                "全部市场资讯渠道失败，已使用缓存聚合资讯",
             )
 
         payload = {
@@ -531,7 +531,7 @@ class MarketNewsIntelligenceService:
 
 def _format_error(error: Exception | None) -> str:
     if error is None:
-        return "unknown error"
+        return "未知错误"
     return f"{error.__class__.__name__}: {error}"
 
 

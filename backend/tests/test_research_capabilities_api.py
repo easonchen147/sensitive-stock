@@ -7,7 +7,7 @@ from tests.auth_helpers import auth_test_config, issue_auth_headers
 class StubScreenerService:
     def list_templates(self) -> dict:
         return {
-            "status": "migrated",
+            "status": "ready",
             "templates": [{"id": "momentum"}],
             "metadata": {"source": "stub", "degraded": False},
         }
@@ -48,7 +48,7 @@ class StubScreenerService:
 class StubDiagnosisService:
     def describe(self) -> dict:
         return {
-            "status": "migrated",
+            "status": "ready",
             "sections": ["market_context"],
             "metadata": {"source": "stub", "degraded": False},
         }
@@ -68,7 +68,7 @@ class StubDiagnosisService:
 class StubFactorService:
     def describe(self) -> dict:
         return {
-            "status": "migrated",
+            "status": "ready",
             "supportedFactors": ["momentum_5"],
             "metadata": {"source": "stub", "degraded": False},
         }
@@ -92,7 +92,7 @@ class StubFactorService:
 class StubPortfolioService:
     def describe(self) -> dict:
         return {
-            "status": "migrated",
+            "status": "ready",
             "objectives": ["equal_weight"],
             "metadata": {"source": "stub", "degraded": False},
         }
@@ -125,7 +125,7 @@ def _app_with_stubs():
     )
 
 
-def test_research_capabilities_are_marked_migrated() -> None:
+def test_research_capabilities_are_marked_ready() -> None:
     app = _app_with_stubs()
     client = app.test_client()
     headers = issue_auth_headers(client)
@@ -135,7 +135,7 @@ def test_research_capabilities_are_marked_migrated() -> None:
     assert response.status_code == 200
     items = {item["name"]: item for item in response.get_json()["items"]}
     for name in ("screener", "diagnosis", "factors", "portfolio"):
-        assert items[name]["status"] == "migrated"
+        assert items[name]["status"] == "ready"
 
 
 def test_screener_api_runs_and_exports_backtest_handoff() -> None:

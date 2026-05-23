@@ -14,26 +14,27 @@ DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"
 DEFAULT_THINKING_TYPE = "enabled"
 DEFAULT_REASONING_EFFORT = "high"
 PREDICTION_SCHEMA_VERSION = "market-prediction-json-v1"
-PREDICTION_SYSTEM_PROMPT = f"""You are a cautious A-share market research assistant.
-Return strict JSON only. Never provide trading instructions or guarantees.
-Use this schema version: {PREDICTION_SCHEMA_VERSION}.
+PREDICTION_SYSTEM_PROMPT = f"""你是谨慎的 A 股市场研究助手。
+只返回严格 JSON，不给出交易指令或收益保证。
+所有 summary、riskNotes、horizon、drivers 等可读文本都必须使用简体中文。
+使用结构版本：{PREDICTION_SCHEMA_VERSION}。
 
-EXAMPLE JSON OUTPUT:
+示例 JSON 输出：
 {{
-  "summary": "One concise market-research summary.",
+  "summary": "一句简洁的市场研究摘要。",
   "riskNotes": [
-    "Predictions are research context, not investment advice.",
-    "Validate candidates with AKQuant backtests."
+    "预测只作为研究上下文，不构成投资建议。",
+    "候选方向需要结合回测与更宽市场数据验证。"
   ],
   "predictions": [
     {{
       "targetType": "sector",
-      "target": "AI infrastructure",
+      "target": "算力基础设施",
       "direction": "bullish",
       "confidence": 0.65,
       "score": 8.5,
-      "horizon": "1-3 trading days",
-      "drivers": ["AI", "cooling demand"],
+      "horizon": "1 至 3 个交易日",
+      "drivers": ["人工智能", "液冷需求"],
       "sourceIds": ["news-1"]
     }}
   ]
@@ -98,7 +99,7 @@ class DeepSeekMarketPredictionService:
                 context=context,
                 metadata_base=metadata_base,
                 cache_key=cache_key,
-                warnings=["DeepSeek API key is not configured; using local heuristic predictions."],
+                warnings=["未配置 DeepSeek 访问密钥，已切换为本地启发式预测。"],
             )
 
         cached_payload = self._prediction_cache.get(cache_key)
@@ -179,7 +180,7 @@ class DeepSeekMarketPredictionService:
                 metadata_base=metadata_base,
                 cache_key=cache_key,
                 warnings=[
-                    "DeepSeek prediction failed; using local heuristic: "
+                    "DeepSeek 预测失败，已切换为本地启发式预测："
                     f"{_format_error(error)}"
                 ],
             )
@@ -206,12 +207,12 @@ class DeepSeekMarketPredictionService:
             predictions.append(
                 {
                     "targetType": "sector",
-                    "target": str(hint.get("name") or "unknown"),
+                    "target": str(hint.get("name") or "未知目标"),
                     "direction": "bullish" if score >= 2 else "neutral",
                     "confidence": round(confidence, 2),
                     "score": score,
-                    "horizon": "1-3 trading days",
-                    "drivers": matched[:5] or ["sector keyword match"],
+                    "horizon": "1 至 3 个交易日",
+                    "drivers": matched[:5] or ["板块关键词命中"],
                     "sourceIds": source_ids,
                 }
             )
@@ -222,12 +223,12 @@ class DeepSeekMarketPredictionService:
                 predictions.append(
                     {
                         "targetType": "theme",
-                        "target": str(keyword.get("keyword") or "unknown"),
+                        "target": str(keyword.get("keyword") or "未知主题"),
                         "direction": "neutral",
                         "confidence": round(max(0.2, min(0.6, 0.25 + count / 30)), 2),
                         "score": count,
-                        "horizon": "1-3 trading days",
-                        "drivers": [str(keyword.get("keyword") or "keyword frequency")],
+                        "horizon": "1 至 3 个交易日",
+                        "drivers": [str(keyword.get("keyword") or "关键词频次")],
                         "sourceIds": source_ids,
                     }
                 )
@@ -236,12 +237,12 @@ class DeepSeekMarketPredictionService:
             predictions.append(
                 {
                     "targetType": "market",
-                    "target": "A-share broad market",
+                    "target": "A 股宽基市场",
                     "direction": "neutral",
                     "confidence": 0.2,
                     "score": 0.0,
-                    "horizon": "1-3 trading days",
-                    "drivers": ["insufficient market news context"],
+                    "horizon": "1 至 3 个交易日",
+                    "drivers": ["市场资讯上下文不足"],
                     "sourceIds": source_ids,
                 }
             )
@@ -259,7 +260,7 @@ class DeepSeekMarketPredictionService:
             },
             "predictions": predictions,
             "predictionSummary": (
-                "Local heuristic prediction derived from keyword frequency and sector hints."
+                "本地启发式预测由关键词频次和板块提示生成。"
             ),
             "riskNotes": self._default_risk_notes(),
         }
@@ -279,7 +280,7 @@ class DeepSeekMarketPredictionService:
                     "direction": _normalize_direction(row.get("direction")),
                     "confidence": _bounded_float(row.get("confidence"), default=0.35),
                     "score": _bounded_float(row.get("score"), default=0.0, upper=100.0),
-                    "horizon": str(row.get("horizon") or "1-3 trading days"),
+                    "horizon": str(row.get("horizon") or "1 至 3 个交易日"),
                     "drivers": _string_list(row.get("drivers")),
                     "sourceIds": _string_list(row.get("sourceIds")),
                 }
@@ -322,9 +323,9 @@ class DeepSeekMarketPredictionService:
 
     def _default_risk_notes(self) -> list[str]:
         return [
-            "Predictions are research context, not investment advice.",
-            "Validate candidate symbols with AKQuant backtests and broader market data.",
-            "External news and model outputs may be incomplete, delayed, or wrong.",
+            "预测只作为研究上下文，不构成投资建议。",
+            "候选标的需要结合回测和更宽市场数据验证。",
+            "外部资讯和模型输出可能不完整、延迟或错误。",
         ]
 
 

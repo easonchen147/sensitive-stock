@@ -13,17 +13,17 @@ class ScreenerService:
 
     def list_templates(self) -> dict[str, Any]:
         return {
-            "status": "migrated",
+            "status": "ready",
             "templates": [
                 {
                     "id": "momentum",
-                    "label": "Momentum candidates",
+                    "label": "动量候选",
                     "filters": {"minChangePercent": 0},
                     "sortBy": "score",
                 },
                 {
                     "id": "low_price_rebound",
-                    "label": "Low-price rebound watchlist",
+                    "label": "低价反弹观察",
                     "filters": {"maxPrice": 20, "minChangePercent": -2},
                     "sortBy": "changePercent",
                 },
@@ -49,7 +49,7 @@ class ScreenerService:
         except Exception as error:  # pragma: no cover - exercised through API behavior
             quotes = []
             degraded = True
-            warnings.append(f"market quote source unavailable: {error}")
+            warnings.append(f"行情报价源暂不可用：{error}")
 
         items = [
             self._serialize_candidate(quote, interpreted_filters)

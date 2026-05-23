@@ -61,13 +61,13 @@ def test_openapi_security_scheme_distinguishes_public_and_protected_operations()
     health_operation = document["paths"]["/api/v1/health"]["get"]
     openapi_operation = document["paths"]["/api/v1/openapi.json"]["get"]
     backtest_operation = document["paths"]["/api/v1/backtests/run"]["post"]
-    placeholder_operation = document["paths"]["/api/v1/screener"]["get"]
+    screener_overview_operation = document["paths"]["/api/v1/screener"]["get"]
 
     assert login_operation["security"] == []
     assert health_operation["security"] == []
     assert openapi_operation["security"] == []
     assert backtest_operation["security"] == [{"bearerAuth": []}]
-    assert placeholder_operation["security"] == [{"bearerAuth": []}]
+    assert screener_overview_operation["security"] == [{"bearerAuth": []}]
 
 
 def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
@@ -95,6 +95,11 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
     assert "BacktestHandoff" in schemas
     assert "ScreenerRunResponse" in schemas
     assert "DiagnosisRunResponse" in schemas
+    assert schemas["Capability"]["properties"]["status"]["enum"] == [
+        "ready",
+        "limited",
+        "disabled",
+    ]
 
     backtest_request = schemas["BacktestRunRequest"]
     assert set(backtest_request["required"]) == {"market", "strategy"}

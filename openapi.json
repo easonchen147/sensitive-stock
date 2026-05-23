@@ -244,7 +244,7 @@
           "capabilities"
         ],
         "operationId": "listCapabilities",
-        "summary": "List migrated, skeleton, and planned backend capabilities.",
+        "summary": "List backend research capabilities and runtime status.",
         "security": [
           {
             "bearerAuth": []
@@ -2249,9 +2249,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "migrated",
-              "skeleton",
-              "planned"
+              "ready",
+              "limited",
+              "disabled"
             ]
           },
           "path": {
@@ -2277,24 +2277,6 @@
           }
         },
         "additionalProperties": false
-      },
-      "PlaceholderCapabilityResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Capability"
-          },
-          {
-            "type": "object",
-            "required": [
-              "nextStep"
-            ],
-            "properties": {
-              "nextStep": {
-                "type": "string"
-              }
-            }
-          }
-        ]
       },
       "CapabilityMetadata": {
         "type": "object",
@@ -3310,7 +3292,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "migrated"
+              "ready",
+              "limited",
+              "disabled"
             ]
           },
           "templates": {
@@ -3454,7 +3438,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "migrated"
+              "ready",
+              "limited",
+              "disabled"
             ]
           },
           "sections": {
@@ -3527,7 +3513,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "migrated"
+              "ready",
+              "limited",
+              "disabled"
             ]
           },
           "supportedFactors": {
@@ -3594,7 +3582,9 @@
           "status": {
             "type": "string",
             "enum": [
-              "migrated"
+              "ready",
+              "limited",
+              "disabled"
             ]
           },
           "objectives": {
@@ -3910,7 +3900,7 @@
     },
     {
       "name": "capabilities",
-      "description": "Current and migrating research capabilities."
+      "description": "Current research capability runtime status."
     }
   ]
 }

@@ -61,7 +61,7 @@ class AkshareMarketDataService:
             try:
                 items = self._fetch_quotes_from_eastmoney(normalized_symbols)
                 warning = (
-                    "akshare quote source unavailable; using eastmoney_direct: "
+                    "主行情报价源暂不可用，已切换备用报价源："
                     f"{_format_error(primary_error)}"
                 )
                 payload = {
@@ -73,9 +73,17 @@ class AkshareMarketDataService:
             except Exception as fallback_error:
                 cached = self._cache.get(cache_key)
                 if cached is None:
-                    raise
+                    return {
+                        "source": "unavailable",
+                        "degraded": True,
+                        "warnings": [
+                            "报价刷新失败，暂未获得可用行情数据："
+                            f"{_format_error(fallback_error)}"
+                        ],
+                        "items": [],
+                    }
                 warning = (
-                    "quote refresh failed; using cached market data: "
+                    "报价刷新失败，已使用缓存行情数据："
                     f"{_format_error(fallback_error)}"
                 )
                 return self._as_degraded_cache_payload(
@@ -106,7 +114,7 @@ class AkshareMarketDataService:
             try:
                 items = self._fetch_sectors_from_eastmoney(limit=limit, sector_type=sector_type)
                 warning = (
-                    "akshare sector source unavailable; using eastmoney_direct: "
+                    "主板块数据源暂不可用，已切换备用板块源："
                     f"{_format_error(primary_error)}"
                 )
                 payload = {
@@ -119,9 +127,18 @@ class AkshareMarketDataService:
             except Exception as fallback_error:
                 cached = self._cache.get(cache_key)
                 if cached is None:
-                    raise
+                    return {
+                        "source": "unavailable",
+                        "degraded": True,
+                        "warnings": [
+                            "板块刷新失败，暂未获得可用行情数据："
+                            f"{_format_error(fallback_error)}"
+                        ],
+                        "sectorType": sector_type,
+                        "items": [],
+                    }
                 warning = (
-                    "sector refresh failed; using cached market data: "
+                    "板块刷新失败，已使用缓存行情数据："
                     f"{_format_error(fallback_error)}"
                 )
                 return self._as_degraded_cache_payload(
@@ -313,7 +330,7 @@ class AkshareMarketDataService:
             except Exception as error:  # noqa: PERF203
                 last_error = error
 
-        raise RuntimeError(f"eastmoney request failed: {_format_error(last_error)}")
+        raise RuntimeError(f"东方财富请求失败：{_format_error(last_error)}")
 
     def _as_degraded_cache_payload(self, payload: dict[str, Any], warning: str) -> dict[str, Any]:
         warnings = list(payload.get("warnings") or [])
@@ -327,5 +344,5 @@ class AkshareMarketDataService:
 
 def _format_error(error: Exception | None) -> str:
     if error is None:
-        return "unknown error"
+        return "未知错误"
     return f"{error.__class__.__name__}: {error}"

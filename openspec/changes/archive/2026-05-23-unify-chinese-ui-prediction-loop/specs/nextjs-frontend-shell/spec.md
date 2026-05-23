@@ -12,6 +12,7 @@ The Next.js application shell SHALL render Chinese brand, navigation, page conte
 #### Scenario: Authenticated user opens the shell
 - **WHEN** an authenticated user opens any protected page
 - **THEN** navigation entries, current page context, status chips, and auth controls are displayed in Chinese
+- **AND** the shell uses runtime product states rather than migration labels
 
 ### Requirement: Market page SHALL provide prediction detail, history, and evaluation areas
 The market workbench SHALL render prediction rows together with selectable detail, recent prediction history, source-quality scoring, DeepSeek mode metadata, evaluation summary, and backtest handoff information.

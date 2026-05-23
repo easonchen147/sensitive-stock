@@ -117,7 +117,7 @@ def test_prediction_calls_deepseek_v4_flash_and_parses_json_response() -> None:
     assert session.calls[0]["json"]["response_format"] == {"type": "json_object"}
     assert session.calls[0]["json"]["thinking"] == {"type": "enabled"}
     assert session.calls[0]["json"]["reasoning_effort"] == "high"
-    assert "EXAMPLE JSON OUTPUT" in session.calls[0]["json"]["messages"][0]["content"]
+    assert "示例 JSON 输出" in session.calls[0]["json"]["messages"][0]["content"]
     assert payload["predictionMetadata"]["provider"] == "deepseek"
     assert payload["predictionMetadata"]["degraded"] is False
     assert payload["predictionMetadata"]["thinkingType"] == "enabled"
@@ -277,4 +277,4 @@ def test_prediction_falls_back_when_deepseek_response_is_malformed() -> None:
     assert payload["predictionMetadata"]["schemaVersion"] == "market-prediction-json-v1"
     assert payload["predictionMetadata"]["cached"] is False
     assert payload["predictionMetadata"]["inputDigest"]
-    assert "DeepSeek prediction failed" in payload["predictionMetadata"]["warnings"][0]
+    assert "DeepSeek 预测失败" in payload["predictionMetadata"]["warnings"][0]

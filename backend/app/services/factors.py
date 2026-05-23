@@ -13,7 +13,7 @@ class FactorAnalysisService:
 
     def describe(self) -> dict[str, Any]:
         return {
-            "status": "migrated",
+            "status": "ready",
             "supportedFactors": [
                 "momentum_5",
                 "momentum_10",

@@ -1,4 +1,4 @@
-export type CapabilityStatus = "migrated" | "skeleton" | "planned";
+export type CapabilityStatus = "ready" | "limited" | "disabled";
 
 export type Capability = {
   name: string;
@@ -503,7 +503,7 @@ export type ScreenerRunResponse = {
 };
 
 export type ScreenerOverviewResponse = {
-  status: "migrated";
+  status: CapabilityStatus;
   templates: Array<Record<string, unknown>>;
   metadata: CapabilityMetadata;
 };

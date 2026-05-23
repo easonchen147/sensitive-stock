@@ -1,8 +1,8 @@
-type CapabilityPlaceholderProps = {
+type CapabilityStatusPanelProps = {
   eyebrow: string;
   title: string;
   summary: string;
-  status: "skeleton" | "planned" | "migrated";
+  status: "ready" | "limited" | "disabled";
   route: string;
   availableNow: string[];
   blockedBy: string[];
@@ -10,12 +10,12 @@ type CapabilityPlaceholderProps = {
 };
 
 const STATUS_LABELS = {
-  migrated: "已迁移",
-  skeleton: "骨架中",
-  planned: "规划中",
+  ready: "可用",
+  limited: "受限",
+  disabled: "停用",
 };
 
-export function CapabilityPlaceholder({
+export function CapabilityStatusPanel({
   eyebrow,
   title,
   summary,
@@ -24,7 +24,7 @@ export function CapabilityPlaceholder({
   availableNow,
   blockedBy,
   nextStep,
-}: CapabilityPlaceholderProps) {
+}: CapabilityStatusPanelProps) {
   return (
     <>
       <section className="hero">
@@ -37,19 +37,19 @@ export function CapabilityPlaceholder({
             <div className="metric-card">
               <span className="metric-label">能力入口</span>
               <div className="metric-value">{route}</div>
-              <div className="metric-note">当前入口已预留在新前端中</div>
+              <div className="metric-note">当前入口必须由真实接口支撑</div>
             </div>
             <div className="metric-card">
               <span className="metric-label">状态</span>
               <div className="metric-value">{STATUS_LABELS[status]}</div>
-              <div className="metric-note">不会把未迁链路伪装成已完成</div>
+              <div className="metric-note">只展示运行态，不展示交付过程标签</div>
             </div>
           </div>
         </article>
 
         <aside className="hero-card status-rail">
           <div className="eyebrow">交付状态</div>
-          <h2 className="panel-title">当前真实可用范围</h2>
+          <h2 className="panel-title">运行状态</h2>
           <div className="status-list">
             <div className="status-item" data-status={status}>
               <div className="status-head">
@@ -58,10 +58,10 @@ export function CapabilityPlaceholder({
               </div>
               <p>{summary}</p>
             </div>
-            <div className="status-item" data-status="planned">
+            <div className="status-item" data-status="limited">
               <div className="status-head">
                 <strong>下一步</strong>
-                <span className="status-pill">待推进</span>
+                <span className="status-pill">受限项</span>
               </div>
               <p>{nextStep}</p>
             </div>
@@ -75,7 +75,7 @@ export function CapabilityPlaceholder({
           <h2 className="panel-title">已具备的边界</h2>
           <div className="status-list">
             {availableNow.map((item) => (
-              <div className="placeholder-item" key={item}>
+              <div className="fact-item" key={item}>
                 {item}
               </div>
             ))}
@@ -83,11 +83,11 @@ export function CapabilityPlaceholder({
         </article>
 
         <article className="panel">
-          <div className="eyebrow">仍缺依赖</div>
-          <h2 className="panel-title">尚未迁入的真实依赖</h2>
+          <div className="eyebrow">受限说明</div>
+          <h2 className="panel-title">当前受限项</h2>
           <div className="status-list">
             {blockedBy.map((item) => (
-              <div className="placeholder-item" key={item}>
+              <div className="fact-item" key={item}>
                 {item}
               </div>
             ))}

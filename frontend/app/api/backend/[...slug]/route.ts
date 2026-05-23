@@ -12,7 +12,7 @@ async function proxyToBackend(request: NextRequest, slug: string[]) {
       {
         error: {
           code: "unknown_openapi_route",
-          message: "This backend route is not registered in the frontend OpenAPI binding table.",
+          message: "该后端路由未登记在前端接口绑定表中。",
         },
       },
       { status: 404 },
@@ -26,7 +26,7 @@ async function proxyToBackend(request: NextRequest, slug: string[]) {
       {
         error: {
           code: "authentication_required",
-          message: "A valid bearer token is required.",
+          message: "需要有效访问凭证。",
         },
       },
       { status: 401 },

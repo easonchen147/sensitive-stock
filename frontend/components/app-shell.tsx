@@ -9,43 +9,43 @@ const NAV_ITEMS = [
   {
     href: "/",
     label: "研究总览",
-    badge: "总览",
-    summary: "能力地图、接口状态、预测复盘和研究工作流入口。",
+    badge: "中枢",
+    summary: "接口清单、研究入口、风险提示和预测复盘入口。",
   },
   {
     href: "/backtests",
     label: "回测验证",
-    badge: "已接入",
-    summary: "基于 AKQuant 的策略执行、交易假设和结构化报告。",
+    badge: "验证",
+    summary: "策略执行、交易假设、成本风控和结构化报告。",
   },
   {
     href: "/market",
     label: "行情预测",
-    badge: "多源资讯",
-    summary: "AkShare 行情、多源快讯、DeepSeek 预测和评估闭环。",
+    badge: "情报",
+    summary: "行情、快讯、模型预测、历史详情和评估闭环。",
   },
   {
     href: "/screener",
     label: "选股研究",
-    badge: "已迁移",
-    summary: "结构化条件、自然语言解释、导出字段和回测回灌。",
+    badge: "筛选",
+    summary: "结构化条件、自然语言解释、导出字段和回测交接。",
   },
   {
     href: "/diagnosis",
     label: "诊股报告",
-    badge: "已迁移",
-    summary: "行情上下文、指标摘要、诊断段落和降级元数据。",
+    badge: "诊断",
+    summary: "行情上下文、指标摘要、诊断段落和风险提示。",
   },
   {
     href: "/factors",
     label: "因子研究",
-    badge: "已迁移",
-    summary: "最新因子、IC 排名、窗口元数据和摘要统计。",
+    badge: "因子",
+    summary: "最新因子、相关性排名、窗口信息和摘要统计。",
   },
   {
     href: "/portfolio",
     label: "组合研究",
-    badge: "已迁移",
+    badge: "配置",
     summary: "组合优化目标、权重分配、统计指标和风险提示。",
   },
 ];
@@ -72,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="shell-tag">预测 · 回测 · 因子 · 组合</div>
             </div>
             <div className="shell-brand-note">
-              统一使用 Flask 后端、受保护接口和全局 OpenAPI 契约，服务 A 股研究、预测与验证闭环。
+              统一入口服务 A 股研究、预测、验证与组合配置，所有可见模块均有接口支撑。
             </div>
           </div>
 
@@ -101,13 +101,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="shell-status-strip">
             <span className="shell-status-chip" data-tone="positive">
-              回测已接入
+              数据通路
             </span>
             <span className="shell-status-chip" data-tone="neutral">
-              行情已连接
+              模型预测
             </span>
             <span className="shell-status-chip" data-tone="positive">
-              研究接口已迁移
+              回测验证
             </span>
           </div>
         </div>

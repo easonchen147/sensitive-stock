@@ -12,7 +12,7 @@ export async function GET() {
       {
         error: {
           code: "authentication_required",
-          message: "A valid bearer token is required.",
+          message: "需要有效访问凭证。",
         },
       },
       { status: 401 },

@@ -133,7 +133,7 @@ def build_openapi_document(
             {"name": "auth", "description": "Token login and session APIs."},
             {"name": "market", "description": "AkShare market data and Jin10 intelligence APIs."},
             {"name": "backtests", "description": "AKQuant-backed backtest APIs."},
-            {"name": "capabilities", "description": "Current and migrating research capabilities."},
+            {"name": "capabilities", "description": "Current research capability runtime status."},
         ],
     }
 
@@ -200,7 +200,7 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 path=full("/capabilities"),
                 tag="capabilities",
                 operation_id="listCapabilities",
-                summary="List migrated, skeleton, and planned backend capabilities.",
+                summary="List backend research capabilities and runtime status.",
                 response_schema="#/components/schemas/CapabilityInventoryResponse",
             )
         },
@@ -492,7 +492,7 @@ def _build_components() -> dict[str, Any]:
             "properties": {
                 "name": {"type": "string"},
                 "label": {"type": "string"},
-                "status": {"type": "string", "enum": ["migrated", "skeleton", "planned"]},
+                "status": {"type": "string", "enum": ["ready", "limited", "disabled"]},
                 "path": {"type": "string"},
                 "summary": {"type": "string"},
             },
@@ -508,16 +508,6 @@ def _build_components() -> dict[str, Any]:
                 }
             },
             "additionalProperties": False,
-        },
-        "PlaceholderCapabilityResponse": {
-            "allOf": [
-                {"$ref": "#/components/schemas/Capability"},
-                {
-                    "type": "object",
-                    "required": ["nextStep"],
-                    "properties": {"nextStep": {"type": "string"}},
-                },
-            ]
         },
         "CapabilityMetadata": {
             "type": "object",
@@ -1018,7 +1008,7 @@ def _build_components() -> dict[str, Any]:
             "type": "object",
             "required": ["status", "templates", "metadata"],
             "properties": {
-                "status": {"type": "string", "enum": ["migrated"]},
+                "status": {"type": "string", "enum": ["ready", "limited", "disabled"]},
                 "templates": {
                     "type": "array",
                     "items": {"type": "object", "additionalProperties": True},
@@ -1085,7 +1075,7 @@ def _build_components() -> dict[str, Any]:
             "type": "object",
             "required": ["status", "sections", "metadata"],
             "properties": {
-                "status": {"type": "string", "enum": ["migrated"]},
+                "status": {"type": "string", "enum": ["ready", "limited", "disabled"]},
                 "sections": {"type": "array", "items": {"type": "string"}},
                 "metadata": {"$ref": "#/components/schemas/CapabilityMetadata"},
             },
@@ -1122,7 +1112,7 @@ def _build_components() -> dict[str, Any]:
             "type": "object",
             "required": ["status", "supportedFactors", "metadata"],
             "properties": {
-                "status": {"type": "string", "enum": ["migrated"]},
+                "status": {"type": "string", "enum": ["ready", "limited", "disabled"]},
                 "supportedFactors": {"type": "array", "items": {"type": "string"}},
                 "metadata": {"$ref": "#/components/schemas/CapabilityMetadata"},
             },
@@ -1155,7 +1145,7 @@ def _build_components() -> dict[str, Any]:
             "type": "object",
             "required": ["status", "objectives", "metadata"],
             "properties": {
-                "status": {"type": "string", "enum": ["migrated"]},
+                "status": {"type": "string", "enum": ["ready", "limited", "disabled"]},
                 "objectives": {"type": "array", "items": {"type": "string"}},
                 "metadata": {"$ref": "#/components/schemas/CapabilityMetadata"},
             },

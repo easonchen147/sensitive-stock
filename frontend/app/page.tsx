@@ -15,28 +15,28 @@ const LIVE_ENTRIES = [
 export default async function HomePage() {
   await requireAuthenticatedPage("/");
   const capabilities = await getCapabilitiesServer();
-  const migrated = capabilities.filter((item) => item.status === "migrated");
-  const skeletons = capabilities.filter((item) => item.status !== "migrated");
+  const ready = capabilities.filter((item) => item.status === "ready");
+  const limited = capabilities.filter((item) => item.status === "limited");
 
   return (
     <>
       <WorkbenchHero
         eyebrow="研究总览"
         title="A 股研究工作台"
-        description="登录鉴权、市场情报、AKQuant 回测、选股、诊股、因子和组合优化统一收敛到 Flask 接口与全局 OpenAPI 契约。"
+        description="把行情情报、预测复盘、回测验证、选股、诊股、因子和组合优化放在同一套研究终端里，首页只展示真实可调用的功能入口。"
         metrics={[
           {
-            label: "已迁移能力",
-            value: migrated.length,
-            note: "已具备真实后端路由的能力。",
+            label: "可用能力",
+            value: ready.length,
+            note: "已具备真实接口和页面入口。",
           },
           {
-            label: "待完善能力",
-            value: skeletons.length,
-            note: "仍需后续完善的能力。",
+            label: "受限能力",
+            value: limited.length,
+            note: "当前没有受限模块时保持为 0。",
           },
         ]}
-        meta={["中文投研终端", "OpenAPI 管理", "受保护接口"]}
+        meta={["中文投研终端", "接口契约", "受保护访问"]}
       />
 
       <section className="dashboard-grid">
@@ -55,7 +55,7 @@ export default async function HomePage() {
 
         <article className="panel">
           <div className="eyebrow">能力地图</div>
-          <h2 className="panel-title">后端能力清单</h2>
+          <h2 className="panel-title">真实接口清单</h2>
           <div className="status-list">
             {capabilities.map((capability) => (
               <div className="status-item" data-status={capability.status} key={capability.name}>
@@ -71,12 +71,12 @@ export default async function HomePage() {
 
         <article className="panel">
           <div className="eyebrow">接口契约</div>
-          <h2 className="panel-title">OpenAPI 是接口事实源</h2>
+          <h2 className="panel-title">接口事实源</h2>
           <div className="status-list">
-            <div className="placeholder-item">运行时接口文档：/api/v1/openapi.json</div>
-            <div className="placeholder-item">静态契约文件：openapi.json</div>
-            <div className="placeholder-item">
-              受保护业务接口统一使用 bearerAuth 安全方案。
+            <div className="fact-item">运行时接口文档：/api/v1/openapi.json</div>
+            <div className="fact-item">静态契约文件：openapi.json</div>
+            <div className="fact-item">
+              除健康检查和登录外，业务接口均通过受保护访问链路调用。
             </div>
           </div>
         </article>
