@@ -37,8 +37,8 @@ export function LoginScreen() {
   return (
     <section className="auth-screen">
       <article className="auth-card">
-        <div className="eyebrow">Internal Access</div>
-        <h1 className="hero-title">登录后才能进入 Sensitive Stock 研究工作台。</h1>
+        <div className="eyebrow">内部访问</div>
+        <h1 className="hero-title">登录后进入敏感股票研究台。</h1>
         <p className="hero-copy">
           当前仅提供一套内部管理员账号用于 MVP 验证。这个登录边界是最小可用方案，不代表完整账户系统已经建立。
         </p>

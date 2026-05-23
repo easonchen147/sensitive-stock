@@ -1,9 +1,11 @@
 :root {
+  --font-display: "Noto Serif CJK SC", "Songti SC", SimSun, serif;
+  --font-body: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
   --canvas: #f4f6f1;
   --canvas-strong: #e7ece4;
   --surface: #fbfcf7;
   --surface-muted: #f0f4ed;
-  --surface-strong: #ffffff;
+  --surface-strong: #fdfef9;
   --ink: #141a16;
   --ink-soft: #2a332d;
   --muted: #657066;
@@ -406,6 +408,7 @@ a:focus-visible {
 .quote-card,
 .action-card,
 .assumption-card,
+.detail-card,
 .summary-item,
 .preset-card,
 .news-item,
@@ -413,6 +416,8 @@ a:focus-visible {
 .monthly-pill,
 .state-surface,
 .status-item,
+.prediction-row,
+.history-row,
 .placeholder-item,
 .form-section,
 .chart-shell {
@@ -426,6 +431,7 @@ a:focus-visible {
 .quote-card,
 .action-card,
 .assumption-card,
+.detail-card,
 .summary-item,
 .preset-card,
 .news-item,
@@ -433,6 +439,8 @@ a:focus-visible {
 .monthly-pill,
 .state-surface,
 .status-item,
+.prediction-row,
+.history-row,
 .placeholder-item {
   padding: 12px;
 }
@@ -453,6 +461,8 @@ a:focus-visible {
 }
 
 .status-item[data-status="migrated"],
+.prediction-row[data-active="true"],
+.history-row[data-active="true"],
 .state-surface[data-state="ready"] {
   border-color: rgba(22, 115, 77, 0.24);
   background: var(--positive-soft);
@@ -484,6 +494,38 @@ a:focus-visible {
 .result-header,
 .news-meta {
   flex-wrap: wrap;
+}
+
+.prediction-row,
+.history-row {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  color: var(--ink);
+  text-align: left;
+}
+
+.prediction-row:hover,
+.history-row:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.detail-card,
+.evaluation-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.detail-card {
+  background: var(--surface-muted);
+}
+
+.detail-title {
+  margin: 4px 0 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.12;
 }
 
 .timeline-step {
@@ -609,7 +651,7 @@ a:focus-visible {
 .primary-button {
   border-color: var(--accent-strong);
   background: var(--accent);
-  color: #ffffff;
+  color: #f7fbf4;
 }
 
 .secondary-button:hover,

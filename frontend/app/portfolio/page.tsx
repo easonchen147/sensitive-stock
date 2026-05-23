@@ -8,14 +8,14 @@ export default async function PortfolioPage() {
   return (
     <>
       <WorkbenchHero
-        eyebrow="Portfolio"
+        eyebrow="组合研究"
         title="组合优化工作台"
         description="以 OpenAPI 契约提交标的篮子、时间窗口和优化目标，返回权重、统计指标与元数据。"
         metrics={[
-          { label: "Endpoint", value: "/portfolio/optimize", note: "formal API" },
-          { label: "Objectives", value: "4", note: "equal, min-var, Sharpe, risk parity" },
+          { label: "接口", value: "/portfolio/optimize", note: "正式后端接口" },
+          { label: "优化目标", value: "4", note: "等权、方差、夏普、风险平价" },
         ]}
-        meta={["Allocation weights", "Portfolio statistics", "Objective metadata"]}
+        meta={["配置权重", "组合统计", "目标元数据"]}
       />
       <PortfolioWorkbench />
     </>

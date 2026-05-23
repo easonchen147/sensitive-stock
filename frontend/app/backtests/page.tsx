@@ -8,14 +8,14 @@ export default async function BacktestsPage() {
   return (
     <>
       <WorkbenchHero
-        eyebrow="Backtest Workbench"
-        title="AKQuant-backed 回测台"
-        description="策略预设、参数说明、执行/成本/风控假设、结果 insight 和交易解释在同一个研究页面里闭环展示。"
+        eyebrow="回测验证"
+        title="AKQuant 回测台"
+        description="策略预设、参数说明、执行、成本、风控假设、结果洞察和交易解释在同一个研究页面里闭环展示。"
         metrics={[
-          { label: "Runtime", value: "AKQuant", note: "via backend adapter" },
-          { label: "Mode", value: "close / next_open", note: "execution assumptions visible" },
+          { label: "运行引擎", value: "AKQuant", note: "通过后端适配器执行" },
+          { label: "成交模式", value: "2", note: "执行假设全程可见" },
         ]}
-        meta={["Grouped inputs", "Assumption replay", "Structured report"]}
+        meta={["分组输入", "假设回放", "结构化报告"]}
       />
 
       <BacktestConsole />

@@ -7,7 +7,12 @@ from pydantic import BaseModel
 
 from .schemas.auth import LoginRequest
 from .schemas.backtests import BacktestRunRequest
-from .schemas.market import MarketNewsQuery, MarketQuotesQuery, MarketSectorsQuery
+from .schemas.market import (
+    MarketNewsQuery,
+    MarketQuotesQuery,
+    MarketSectorsQuery,
+    PredictionHistoryQuery,
+)
 from .schemas.research import (
     DiagnosisRequest,
     FactorAnalysisRequest,
@@ -137,6 +142,13 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
     def full(path: str) -> str:
         return f"{api_prefix}{path}"
 
+    run_id_parameter = {
+        "name": "runId",
+        "in": "path",
+        "required": True,
+        "schema": {"type": "string"},
+    }
+
     return {
         full("/openapi.json"): {
             "get": _operation(
@@ -255,6 +267,39 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 summary="Return multi-source market news predictions and backtest handoff.",
                 response_schema="#/components/schemas/MarketNewsPredictionsResponse",
                 parameters=_query_parameters(MarketNewsQuery),
+            )
+        },
+        full("/market/news/prediction-history"): {
+            "get": _operation(
+                method="get",
+                path=full("/market/news/prediction-history"),
+                tag="market",
+                operation_id="getMarketPredictionHistory",
+                summary="Return recent stored market prediction runs.",
+                response_schema="#/components/schemas/PredictionHistoryResponse",
+                parameters=_query_parameters(PredictionHistoryQuery),
+            )
+        },
+        full("/market/news/predictions/{runId}"): {
+            "get": _operation(
+                method="get",
+                path=full("/market/news/predictions/{runId}"),
+                tag="market",
+                operation_id="getMarketPredictionDetail",
+                summary="Return one stored market prediction run.",
+                response_schema="#/components/schemas/PredictionDetailResponse",
+                parameters=[run_id_parameter],
+            )
+        },
+        full("/market/news/predictions/{runId}/evaluate"): {
+            "get": _operation(
+                method="get",
+                path=full("/market/news/predictions/{runId}/evaluate"),
+                tag="market",
+                operation_id="evaluateMarketPredictionRun",
+                summary="Evaluate one stored market prediction run against latest quotes.",
+                response_schema="#/components/schemas/PredictionEvaluationResponse",
+                parameters=[run_id_parameter],
             )
         },
         full("/backtests/presets"): {
@@ -597,6 +642,12 @@ def _build_components() -> dict[str, Any]:
                 "uniqueItems",
                 "duplicateItems",
                 "sourceCoverage",
+                "qualityScore",
+                "coverageScore",
+                "freshnessScore",
+                "reliabilityScore",
+                "duplicatePressure",
+                "qualityNotes",
             ],
             "properties": {
                 "queriedChannels": {"type": "integer"},
@@ -607,6 +658,12 @@ def _build_components() -> dict[str, Any]:
                 "uniqueItems": {"type": "integer"},
                 "duplicateItems": {"type": "integer"},
                 "sourceCoverage": {"type": "array", "items": {"type": "string"}},
+                "qualityScore": {"type": "number"},
+                "coverageScore": {"type": "number"},
+                "freshnessScore": {"type": "number"},
+                "reliabilityScore": {"type": "number"},
+                "duplicatePressure": {"type": "number"},
+                "qualityNotes": {"type": "array", "items": {"type": "string"}},
             },
             "additionalProperties": False,
         },
@@ -676,11 +733,14 @@ def _build_components() -> dict[str, Any]:
             "required": [
                 "provider",
                 "model",
+                "requestMode",
                 "degraded",
                 "cached",
                 "schemaVersion",
                 "cacheKey",
                 "inputDigest",
+                "thinkingType",
+                "reasoningEffort",
                 "newsItemCount",
                 "keywordCount",
                 "sectorHintCount",
@@ -689,11 +749,14 @@ def _build_components() -> dict[str, Any]:
             "properties": {
                 "provider": {"type": "string"},
                 "model": {"type": "string"},
+                "requestMode": {"type": "string", "enum": ["remote", "heuristic"]},
                 "degraded": {"type": "boolean"},
                 "cached": {"type": "boolean"},
                 "schemaVersion": {"type": "string"},
                 "cacheKey": {"type": "string"},
                 "inputDigest": {"type": "string"},
+                "thinkingType": {"type": "string", "enum": ["enabled", "disabled"]},
+                "reasoningEffort": {"type": "string", "enum": ["high", "max"]},
                 "newsItemCount": {"type": "integer"},
                 "keywordCount": {"type": "integer"},
                 "sectorHintCount": {"type": "integer"},
@@ -716,6 +779,7 @@ def _build_components() -> dict[str, Any]:
                 "sourceIds",
             ],
             "properties": {
+                "predictionId": {"type": "string"},
                 "targetType": {"type": "string"},
                 "target": {"type": "string"},
                 "direction": {"type": "string", "enum": ["bullish", "neutral", "bearish"]},
@@ -745,6 +809,8 @@ def _build_components() -> dict[str, Any]:
                 {
                     "type": "object",
                     "required": [
+                        "runId",
+                        "createdAt",
                         "channels",
                         "predictionMetadata",
                         "predictions",
@@ -752,6 +818,8 @@ def _build_components() -> dict[str, Any]:
                         "backtestHandoff",
                     ],
                     "properties": {
+                        "runId": {"type": "string"},
+                        "createdAt": {"type": "string"},
                         "channels": {
                             "type": "array",
                             "items": {"$ref": "#/components/schemas/MarketNewsChannel"},
@@ -775,6 +843,105 @@ def _build_components() -> dict[str, Any]:
                     },
                 },
             ]
+        },
+        "PredictionHistoryResponse": {
+            "type": "object",
+            "required": ["items", "metadata"],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/PredictionHistoryRun"},
+                },
+                "metadata": {"$ref": "#/components/schemas/CapabilityMetadata"},
+            },
+            "additionalProperties": True,
+        },
+        "PredictionHistoryRun": {
+            "type": "object",
+            "required": ["runId", "createdAt", "predictionCount", "degraded"],
+            "properties": {
+                "runId": {"type": "string"},
+                "createdAt": {"type": "string"},
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "thinkingType": {"type": "string"},
+                "reasoningEffort": {"type": "string"},
+                "degraded": {"type": "boolean"},
+                "predictionCount": {"type": "integer"},
+                "qualityScore": {"type": "number"},
+                "summary": {"type": "string"},
+            },
+            "additionalProperties": True,
+        },
+        "PredictionDetailResponse": {
+            "type": "object",
+            "required": ["runId", "createdAt", "predictions", "predictionMetadata"],
+            "properties": {
+                "runId": {"type": "string"},
+                "createdAt": {"type": "string"},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/MarketNewsItem"},
+                },
+                "sourceQuality": {"$ref": "#/components/schemas/MarketNewsSourceQuality"},
+                "dedupeMetadata": {"$ref": "#/components/schemas/MarketNewsDedupeMetadata"},
+                "predictionMetadata": {"$ref": "#/components/schemas/MarketPredictionMetadata"},
+                "predictions": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/MarketPrediction"},
+                },
+                "riskNotes": {"type": "array", "items": {"type": "string"}},
+                "backtestHandoff": {"$ref": "#/components/schemas/BacktestHandoff"},
+            },
+            "additionalProperties": True,
+        },
+        "PredictionEvaluationResponse": {
+            "type": "object",
+            "required": [
+                "runId",
+                "evaluatedAt",
+                "evaluationSummary",
+                "evaluationItems",
+                "metadata",
+            ],
+            "properties": {
+                "runId": {"type": "string"},
+                "evaluatedAt": {"type": "string"},
+                "evaluationSummary": {"$ref": "#/components/schemas/PredictionEvaluationSummary"},
+                "evaluationItems": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/PredictionEvaluationItem"},
+                },
+                "metadata": {"$ref": "#/components/schemas/CapabilityMetadata"},
+            },
+            "additionalProperties": True,
+        },
+        "PredictionEvaluationSummary": {
+            "type": "object",
+            "required": ["total", "assessable", "hit", "miss", "neutral", "pending"],
+            "properties": {
+                "total": {"type": "integer"},
+                "assessable": {"type": "integer"},
+                "hit": {"type": "integer"},
+                "miss": {"type": "integer"},
+                "neutral": {"type": "integer"},
+                "pending": {"type": "integer"},
+                "hitRate": {"type": ["number", "null"]},
+            },
+            "additionalProperties": True,
+        },
+        "PredictionEvaluationItem": {
+            "type": "object",
+            "required": ["predictionId", "target", "direction", "status", "note"],
+            "properties": {
+                "predictionId": {"type": "string"},
+                "target": {"type": "string"},
+                "direction": {"type": "string", "enum": ["bullish", "neutral", "bearish"]},
+                "status": {"type": "string", "enum": ["hit", "miss", "neutral", "pending"]},
+                "actualChangePercent": {"type": ["number", "null"]},
+                "note": {"type": "string"},
+            },
+            "additionalProperties": True,
         },
         "BacktestPresetCatalogResponse": {
             "type": "object",

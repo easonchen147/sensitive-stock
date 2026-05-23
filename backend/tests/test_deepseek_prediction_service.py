@@ -115,9 +115,14 @@ def test_prediction_calls_deepseek_v4_flash_and_parses_json_response() -> None:
     assert session.calls[0]["url"] == "https://api.deepseek.com/chat/completions"
     assert session.calls[0]["json"]["model"] == "deepseek-v4-flash"
     assert session.calls[0]["json"]["response_format"] == {"type": "json_object"}
+    assert session.calls[0]["json"]["thinking"] == {"type": "enabled"}
+    assert session.calls[0]["json"]["reasoning_effort"] == "high"
     assert "EXAMPLE JSON OUTPUT" in session.calls[0]["json"]["messages"][0]["content"]
     assert payload["predictionMetadata"]["provider"] == "deepseek"
     assert payload["predictionMetadata"]["degraded"] is False
+    assert payload["predictionMetadata"]["thinkingType"] == "enabled"
+    assert payload["predictionMetadata"]["reasoningEffort"] == "high"
+    assert payload["predictionMetadata"]["requestMode"] == "remote"
     assert payload["predictionMetadata"]["schemaVersion"] == "market-prediction-json-v1"
     assert payload["predictionMetadata"]["cached"] is False
     assert payload["predictionMetadata"]["newsItemCount"] == 1
@@ -216,6 +221,49 @@ def test_prediction_cache_key_changes_when_symbols_change() -> None:
     )
 
 
+def test_prediction_sends_disabled_thinking_without_reasoning_effort() -> None:
+    response_payload = {
+        "choices": [
+            {
+                "message": {
+                    "content": json.dumps(
+                        {
+                            "summary": "AI infrastructure remains active.",
+                            "riskNotes": ["Validate with backtests."],
+                            "predictions": [
+                                {
+                                    "targetType": "sector",
+                                    "target": "AI infrastructure",
+                                    "direction": "bullish",
+                                    "confidence": 0.7,
+                                    "score": 8,
+                                    "horizon": "1-3 trading days",
+                                    "drivers": ["AI"],
+                                    "sourceIds": ["news-1"],
+                                }
+                            ],
+                        }
+                    )
+                }
+            }
+        ]
+    }
+    session = FakeSession(payload=response_payload)
+    service = DeepSeekMarketPredictionService(
+        api_key="test-key",
+        session=session,
+        thinking_type="disabled",
+        reasoning_effort="max",
+    )
+
+    payload = service.predict(**_context())
+
+    assert session.calls[0]["json"]["thinking"] == {"type": "disabled"}
+    assert "reasoning_effort" not in session.calls[0]["json"]
+    assert payload["predictionMetadata"]["thinkingType"] == "disabled"
+    assert payload["predictionMetadata"]["reasoningEffort"] == "max"
+
+
 def test_prediction_falls_back_when_deepseek_response_is_malformed() -> None:
     session = FakeSession(payload={"choices": [{"message": {"content": "not-json"}}]})
     service = DeepSeekMarketPredictionService(api_key="test-key", session=session)
@@ -225,6 +273,7 @@ def test_prediction_falls_back_when_deepseek_response_is_malformed() -> None:
 
     assert payload["predictionMetadata"]["provider"] == "local_heuristic"
     assert payload["predictionMetadata"]["degraded"] is True
+    assert payload["predictionMetadata"]["requestMode"] == "heuristic"
     assert payload["predictionMetadata"]["schemaVersion"] == "market-prediction-json-v1"
     assert payload["predictionMetadata"]["cached"] is False
     assert payload["predictionMetadata"]["inputDigest"]

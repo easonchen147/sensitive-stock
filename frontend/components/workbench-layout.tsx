@@ -1,6 +1,15 @@
 import type { CapabilityMetadata } from "@/types/api";
+import { displayText } from "@/lib/display";
 
 export type WorkflowState = "loading" | "empty" | "degraded" | "error" | "ready";
+
+const STATE_LABELS: Record<WorkflowState, string> = {
+  loading: "加载中",
+  empty: "暂无数据",
+  degraded: "降级可用",
+  error: "请求异常",
+  ready: "已就绪",
+};
 
 type MetricItem = {
   label: string;
@@ -31,7 +40,7 @@ export function WorkbenchHero({
         <p className="hero-copy">{description}</p>
       </div>
       {metrics.length || meta.length ? (
-        <aside className="workbench-hero-aside" aria-label={`${title} status`}>
+        <aside className="workbench-hero-aside" aria-label={`${title} 状态`}>
           {metrics.length ? (
             <div className="metric-grid compact">
               {metrics.map((metric) => (
@@ -105,7 +114,7 @@ export function StateSurface({
 }) {
   return (
     <div className="state-surface" data-state={state}>
-      <span className="state-kicker">{state}</span>
+      <span className="state-kicker">{STATE_LABELS[state]}</span>
       <strong>{title}</strong>
       {detail ? <p>{detail}</p> : null}
     </div>
@@ -121,11 +130,11 @@ export function MetadataState({ metadata }: { metadata?: CapabilityMetadata }) {
     return (
       <StateSurface
         state="degraded"
-        title="Backend returned a degraded response."
+        title="后端返回降级结果。"
         detail={[
           metadata.warnings?.join("; "),
           metadata.unavailableInputs?.length
-            ? `Unavailable inputs: ${metadata.unavailableInputs.join(", ")}`
+            ? `不可用输入：${metadata.unavailableInputs.join(", ")}`
             : "",
         ]
           .filter(Boolean)
@@ -137,8 +146,8 @@ export function MetadataState({ metadata }: { metadata?: CapabilityMetadata }) {
   return (
     <StateSurface
       state="ready"
-      title="Backend response is ready."
-      detail={`source: ${metadata.source || "backend"}`}
+      title="后端响应已就绪。"
+      detail={`来源：${displayText(metadata.source, "后端服务")}`}
     />
   );
 }

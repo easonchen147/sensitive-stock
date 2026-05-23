@@ -21,6 +21,9 @@ EXPECTED_FORMAL_PATHS = {
     "/api/v1/market/news",
     "/api/v1/market/news/intelligence",
     "/api/v1/market/news/predictions",
+    "/api/v1/market/news/prediction-history",
+    "/api/v1/market/news/predictions/{runId}",
+    "/api/v1/market/news/predictions/{runId}/evaluate",
     "/api/v1/backtests/presets",
     "/api/v1/backtests/run",
     "/api/v1/screener",
@@ -86,6 +89,9 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
     assert "MarketPredictionMetadata" in schemas
     assert "MarketNewsSourceQuality" in schemas
     assert "MarketNewsDedupeMetadata" in schemas
+    assert "PredictionHistoryResponse" in schemas
+    assert "PredictionDetailResponse" in schemas
+    assert "PredictionEvaluationResponse" in schemas
     assert "BacktestHandoff" in schemas
     assert "ScreenerRunResponse" in schemas
     assert "DiagnosisRunResponse" in schemas
@@ -103,6 +109,11 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
     assert "schemaVersion" in prediction_metadata["required"]
     assert "cached" in prediction_metadata["required"]
     assert "inputDigest" in prediction_metadata["required"]
+    assert "thinkingType" in prediction_metadata["required"]
+    assert "reasoningEffort" in prediction_metadata["required"]
+    assert "requestMode" in prediction_metadata["required"]
+    assert "qualityScore" in schemas["MarketNewsSourceQuality"]["required"]
+    assert "predictionId" in schemas["MarketPrediction"]["properties"]
     assert (
         schemas["MarketNewsPredictionsResponse"]["allOf"][1]["properties"]["sourceQuality"][
             "$ref"

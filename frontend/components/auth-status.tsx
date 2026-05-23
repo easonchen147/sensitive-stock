@@ -43,7 +43,7 @@ export function AuthStatus() {
   return (
     <div className="auth-toolbar">
       <div className="auth-toolbar-copy">
-        <span className="auth-toolbar-label">Session</span>
+        <span className="auth-toolbar-label">当前会话</span>
         <strong>{session?.user.username || "admin"}</strong>
       </div>
       <button className="ghost-button" disabled={busy} type="button" onClick={() => void handleLogout()}>

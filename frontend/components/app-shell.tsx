@@ -8,45 +8,45 @@ import { AuthStatus } from "@/components/auth-status";
 const NAV_ITEMS = [
   {
     href: "/",
-    label: "Overview",
-    badge: "Cockpit",
-    summary: "Capability inventory, API status, and research workflow entry points.",
+    label: "研究总览",
+    badge: "总览",
+    summary: "能力地图、接口状态、预测复盘和研究工作流入口。",
   },
   {
     href: "/backtests",
-    label: "Backtests",
-    badge: "Live",
-    summary: "AKQuant-backed strategy execution and structured reports.",
+    label: "回测验证",
+    badge: "已接入",
+    summary: "基于 AKQuant 的策略执行、交易假设和结构化报告。",
   },
   {
     href: "/market",
-    label: "Market",
-    badge: "Live Data",
-    summary: "AkShare and Jin10 market intelligence from the Flask backend.",
+    label: "行情预测",
+    badge: "多源资讯",
+    summary: "AkShare 行情、多源快讯、DeepSeek 预测和评估闭环。",
   },
   {
     href: "/screener",
-    label: "Screener",
-    badge: "Migrated",
-    summary: "Structured filters, natural-language interpretation, export rows, and backtest handoff.",
+    label: "选股研究",
+    badge: "已迁移",
+    summary: "结构化条件、自然语言解释、导出字段和回测回灌。",
   },
   {
     href: "/diagnosis",
-    label: "Diagnosis",
-    badge: "Migrated",
-    summary: "Market context, indicator summaries, diagnosis sections, and degraded metadata.",
+    label: "诊股报告",
+    badge: "已迁移",
+    summary: "行情上下文、指标摘要、诊断段落和降级元数据。",
   },
   {
     href: "/factors",
-    label: "Factors",
-    badge: "Migrated",
-    summary: "Factor analysis API with latest factors, IC ranking, and window metadata.",
+    label: "因子研究",
+    badge: "已迁移",
+    summary: "最新因子、IC 排名、窗口元数据和摘要统计。",
   },
   {
     href: "/portfolio",
-    label: "Portfolio",
-    badge: "Migrated",
-    summary: "Portfolio optimizer API with objectives, allocations, and statistics.",
+    label: "组合研究",
+    badge: "已迁移",
+    summary: "组合优化目标、权重分配、统计指标和风险提示。",
   },
 ];
 
@@ -68,18 +68,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="shell-topbar">
           <div className="shell-brand-block">
             <div className="shell-brand">
-              <div className="shell-mark">Sensitive Stock</div>
-              <div className="shell-tag">Research Desk / OpenAPI Platform</div>
+              <div className="shell-mark">敏感股票研究台</div>
+              <div className="shell-tag">预测 · 回测 · 因子 · 组合</div>
             </div>
             <div className="shell-brand-note">
-              All primary research workbenches are now backed by Flask APIs and the shared
-              OpenAPI contract.
+              统一使用 Flask 后端、受保护接口和全局 OpenAPI 契约，服务 A 股研究、预测与验证闭环。
             </div>
           </div>
 
           <div className="shell-toolbar">
             <AuthStatus />
-            <nav className="shell-nav" aria-label="Primary">
+            <nav className="shell-nav" aria-label="主导航">
               {NAV_ITEMS.map((item) => (
                 <Link
                   className="nav-link"
@@ -102,13 +101,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="shell-status-strip">
             <span className="shell-status-chip" data-tone="positive">
-              Backtests live
+              回测已接入
             </span>
             <span className="shell-status-chip" data-tone="neutral">
-              Market connected
+              行情已连接
             </span>
             <span className="shell-status-chip" data-tone="positive">
-              Research APIs migrated
+              研究接口已迁移
             </span>
           </div>
         </div>

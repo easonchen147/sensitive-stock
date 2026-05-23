@@ -10,6 +10,9 @@ import {
   runScreener,
 } from "@/lib/api";
 import { MetadataState, StateSurface } from "@/components/workbench-layout";
+import {
+  displayPortfolioObjective,
+} from "@/lib/display";
 import type {
   CapabilityMetadata,
   DiagnosisResponse,
@@ -35,7 +38,7 @@ function MetadataBanner({ metadata }: { metadata?: CapabilityMetadata }) {
 
 export function ScreenerWorkbench() {
   const [symbols, setSymbols] = useState("000001,600000,300750,000858");
-  const [prompt, setPrompt] = useState("strong momentum under low price");
+  const [prompt, setPrompt] = useState("低价区间内保持强势动量");
   const [minChange, setMinChange] = useState("0");
   const [maxPrice, setMaxPrice] = useState("80");
   const [result, setResult] = useState<ScreenerRunResponse | null>(null);
@@ -63,7 +66,7 @@ export function ScreenerWorkbench() {
       setResult(await runScreener(payload));
       setExportResult(null);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Screener request failed.");
+      setError(caught instanceof Error ? caught.message : "选股请求失败。");
     } finally {
       setLoading(false);
     }
@@ -75,7 +78,7 @@ export function ScreenerWorkbench() {
     try {
       setExportResult(await exportScreener(payload));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Screener export failed.");
+      setError(caught instanceof Error ? caught.message : "选股导出失败。");
     } finally {
       setLoading(false);
     }
@@ -84,45 +87,45 @@ export function ScreenerWorkbench() {
   return (
     <section className="workbench-grid">
       <article className="panel">
-        <div className="eyebrow">Screener</div>
-        <h1 className="panel-title">Structured stock screening</h1>
+        <div className="eyebrow">条件选股</div>
+        <h1 className="panel-title">结构化股票筛选</h1>
         <div className="console-form">
           <div className="field-grid">
-            <label>Universe</label>
+            <label>标的池</label>
             <input value={symbols} onChange={(event) => setSymbols(event.target.value)} />
           </div>
           <div className="field-grid">
-            <label>Natural language prompt</label>
+            <label>自然语言条件</label>
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} />
           </div>
           <div className="field-row">
             <div className="field-grid">
-              <label>Min change %</label>
+              <label>最小涨跌幅</label>
               <input value={minChange} onChange={(event) => setMinChange(event.target.value)} />
             </div>
             <div className="field-grid">
-              <label>Max price</label>
+              <label>最高价格</label>
               <input value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} />
             </div>
           </div>
           <div className="submit-row">
             <button className="primary-button" disabled={loading} onClick={submit}>
-              Run screener
+              运行选股
             </button>
             <button className="secondary-button" disabled={loading || !result} onClick={exportRows}>
-              Export rows
+              导出结果
             </button>
           </div>
           {loading ? (
-            <StateSurface state="loading" title="Screening request is running." />
+            <StateSurface state="loading" title="选股请求运行中。" />
           ) : null}
-          {error ? <StateSurface state="error" title="Screener request failed." detail={error} /> : null}
+          {error ? <StateSurface state="error" title="选股请求失败。" detail={error} /> : null}
         </div>
       </article>
 
       <article className="panel">
-        <div className="eyebrow">Results</div>
-        <h2 className="panel-title">Ranked candidates</h2>
+        <div className="eyebrow">筛选结果</div>
+        <h2 className="panel-title">候选标的排序</h2>
         <MetadataBanner metadata={result?.metadata} />
         <div className="results-stack">
           {result?.items.length ? (
@@ -133,15 +136,15 @@ export function ScreenerWorkbench() {
                   <h3>{item.symbol}</h3>
                   <p>{item.name}</p>
                 </div>
-                <span className="status-pill">Score {item.score.toFixed(2)}</span>
+                <span className="status-pill">评分 {item.score.toFixed(2)}</span>
               </div>
               <div className="metric-grid">
                 <div className="summary-item">
-                  <span className="metric-label">Price</span>
+                  <span className="metric-label">价格</span>
                   <strong>{item.price.toFixed(2)}</strong>
                 </div>
                 <div className="summary-item">
-                  <span className="metric-label">Change</span>
+                  <span className="metric-label">涨跌幅</span>
                   <strong>{item.changePercent.toFixed(2)}%</strong>
                 </div>
               </div>
@@ -150,14 +153,14 @@ export function ScreenerWorkbench() {
           ) : (
             <StateSurface
               state={result ? "empty" : "empty"}
-              title={result ? "No candidates matched this screen." : "Run a screen to see candidates."}
-              detail={result ? "Applied filters are still visible in the response summary." : undefined}
+              title={result ? "当前条件没有匹配候选。" : "运行一次选股后查看候选标的。"}
+              detail={result ? "已应用条件仍会保留在响应摘要中。" : undefined}
             />
           )}
         </div>
         {exportResult ? (
           <div className="banner banner-neutral">
-            Export ready: {exportResult.rows.length} rows, {exportResult.columns.length} columns.
+            导出已准备：{exportResult.rows.length} 行，{exportResult.columns.length} 列。
           </div>
         ) : null}
       </article>
@@ -184,7 +187,7 @@ export function DiagnosisWorkbench() {
         }),
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Diagnosis request failed.");
+      setError(caught instanceof Error ? caught.message : "诊股请求失败。");
     } finally {
       setLoading(false);
     }
@@ -193,23 +196,23 @@ export function DiagnosisWorkbench() {
   return (
     <section className="workbench-grid">
       <article className="panel">
-        <div className="eyebrow">Diagnosis</div>
-        <h1 className="panel-title">Structured stock diagnosis</h1>
+        <div className="eyebrow">诊股报告</div>
+        <h1 className="panel-title">结构化股票诊断</h1>
         <div className="console-form">
           <div className="field-grid">
-            <label>Symbol</label>
+            <label>股票代码</label>
             <input value={symbol} onChange={(event) => setSymbol(event.target.value)} />
           </div>
           <button className="primary-button" disabled={loading} onClick={submit}>
-            Generate report
+            生成报告
           </button>
-          {loading ? <StateSurface state="loading" title="Diagnosis report is running." /> : null}
-          {error ? <StateSurface state="error" title="Diagnosis request failed." detail={error} /> : null}
+          {loading ? <StateSurface state="loading" title="诊股报告生成中。" /> : null}
+          {error ? <StateSurface state="error" title="诊股请求失败。" detail={error} /> : null}
         </div>
       </article>
       <article className="panel">
-        <div className="eyebrow">Report</div>
-        <h2 className="panel-title">{result?.name || "Awaiting symbol"}</h2>
+        <div className="eyebrow">报告内容</div>
+        <h2 className="panel-title">{result?.name || "等待输入标的"}</h2>
         <MetadataBanner metadata={result?.metadata} />
         <div className="insight-list">
           {result?.sections.length ? (
@@ -220,7 +223,7 @@ export function DiagnosisWorkbench() {
             </div>
             ))
           ) : (
-            <StateSurface state="empty" title="Generate a report to inspect structured sections." />
+            <StateSurface state="empty" title="生成报告后查看结构化段落。" />
           )}
         </div>
       </article>
@@ -248,7 +251,7 @@ export function FactorWorkbench() {
         }),
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Factor analysis failed.");
+      setError(caught instanceof Error ? caught.message : "因子分析失败。");
     } finally {
       setLoading(false);
     }
@@ -257,23 +260,23 @@ export function FactorWorkbench() {
   return (
     <section className="workbench-grid">
       <article className="panel">
-        <div className="eyebrow">Factors</div>
-        <h1 className="panel-title">Factor analysis</h1>
+        <div className="eyebrow">因子研究</div>
+        <h1 className="panel-title">因子分析</h1>
         <div className="console-form">
           <div className="field-grid">
-            <label>Symbol</label>
+            <label>股票代码</label>
             <input value={symbol} onChange={(event) => setSymbol(event.target.value)} />
           </div>
           <button className="primary-button" disabled={loading} onClick={submit}>
-            Analyze factors
+            分析因子
           </button>
-          {loading ? <StateSurface state="loading" title="Factor analysis is running." /> : null}
-          {error ? <StateSurface state="error" title="Factor analysis failed." detail={error} /> : null}
+          {loading ? <StateSurface state="loading" title="因子分析运行中。" /> : null}
+          {error ? <StateSurface state="error" title="因子分析失败。" detail={error} /> : null}
         </div>
       </article>
       <article className="panel">
-        <div className="eyebrow">Ranked IC</div>
-        <h2 className="panel-title">{result?.symbol || "No analysis yet"}</h2>
+        <div className="eyebrow">IC 排名</div>
+        <h2 className="panel-title">{result?.symbol || "尚未分析"}</h2>
         <MetadataBanner metadata={result?.metadata} />
         <div className="status-list">
           {result?.rankedFactors.length ? (
@@ -286,7 +289,7 @@ export function FactorWorkbench() {
             </div>
             ))
           ) : (
-            <StateSurface state="empty" title="Run factor analysis to see ranked factors." />
+            <StateSurface state="empty" title="运行因子分析后查看排名。" />
           )}
         </div>
       </article>
@@ -318,7 +321,7 @@ export function PortfolioWorkbench() {
         }),
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Portfolio optimization failed.");
+      setError(caught instanceof Error ? caught.message : "组合优化失败。");
     } finally {
       setLoading(false);
     }
@@ -327,35 +330,37 @@ export function PortfolioWorkbench() {
   return (
     <section className="workbench-grid">
       <article className="panel">
-        <div className="eyebrow">Portfolio</div>
-        <h1 className="panel-title">Portfolio optimization</h1>
+        <div className="eyebrow">组合研究</div>
+        <h1 className="panel-title">组合优化</h1>
         <div className="console-form">
           <div className="field-grid">
-            <label>Symbols</label>
+            <label>标的代码</label>
             <input value={symbols} onChange={(event) => setSymbols(event.target.value)} />
           </div>
           <div className="field-grid">
-            <label>Objective</label>
+            <label>优化目标</label>
             <select
               value={objective}
               onChange={(event) => setObjective(event.target.value as typeof objective)}
             >
-              <option value="equal_weight">Equal weight</option>
-              <option value="minimum_variance">Minimum variance</option>
-              <option value="maximum_sharpe">Maximum Sharpe</option>
-              <option value="risk_parity">Risk parity</option>
+              <option value="equal_weight">等权配置</option>
+              <option value="minimum_variance">最小方差</option>
+              <option value="maximum_sharpe">最大夏普</option>
+              <option value="risk_parity">风险平价</option>
             </select>
           </div>
           <button className="primary-button" disabled={loading} onClick={submit}>
-            Optimize
+            优化组合
           </button>
-          {loading ? <StateSurface state="loading" title="Portfolio optimization is running." /> : null}
-          {error ? <StateSurface state="error" title="Portfolio optimization failed." detail={error} /> : null}
+          {loading ? <StateSurface state="loading" title="组合优化运行中。" /> : null}
+          {error ? <StateSurface state="error" title="组合优化失败。" detail={error} /> : null}
         </div>
       </article>
       <article className="panel">
-        <div className="eyebrow">Allocation</div>
-        <h2 className="panel-title">{result?.objective || "No optimization yet"}</h2>
+        <div className="eyebrow">目标权重</div>
+        <h2 className="panel-title">
+          {result?.objective ? displayPortfolioObjective(result.objective) : "尚未优化"}
+        </h2>
         <MetadataBanner metadata={result?.metadata} />
         <div className="status-list">
           {result?.allocations.length ? (
@@ -368,7 +373,7 @@ export function PortfolioWorkbench() {
             </div>
             ))
           ) : (
-            <StateSurface state="empty" title="Run optimization to see target weights." />
+            <StateSurface state="empty" title="运行组合优化后查看目标权重。" />
           )}
         </div>
       </article>

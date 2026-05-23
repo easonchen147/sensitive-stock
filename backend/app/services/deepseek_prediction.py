@@ -11,6 +11,8 @@ from .runtime_cache import TTLCache
 
 DEFAULT_DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 DEFAULT_DEEPSEEK_MODEL = "deepseek-v4-flash"
+DEFAULT_THINKING_TYPE = "enabled"
+DEFAULT_REASONING_EFFORT = "high"
 PREDICTION_SCHEMA_VERSION = "market-prediction-json-v1"
 PREDICTION_SYSTEM_PROMPT = f"""You are a cautious A-share market research assistant.
 Return strict JSON only. Never provide trading instructions or guarantees.
@@ -45,6 +47,8 @@ class DeepSeekMarketPredictionService:
         api_key: str | None = None,
         base_url: str = DEFAULT_DEEPSEEK_BASE_URL,
         model: str = DEFAULT_DEEPSEEK_MODEL,
+        thinking_type: str = DEFAULT_THINKING_TYPE,
+        reasoning_effort: str = DEFAULT_REASONING_EFFORT,
         session: requests.Session | None = None,
         timeout: int = 10,
         cache_ttl_seconds: int = 300,
@@ -52,6 +56,8 @@ class DeepSeekMarketPredictionService:
         self.api_key = (api_key or "").strip()
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.thinking_type = _normalize_thinking_type(thinking_type)
+        self.reasoning_effort = _normalize_reasoning_effort(reasoning_effort)
         self.session = session or requests.Session()
         self.timeout = timeout
         self._prediction_cache: TTLCache[str, dict[str, Any]] = TTLCache(
@@ -65,15 +71,27 @@ class DeepSeekMarketPredictionService:
         keywords: list[dict[str, Any]],
         sector_hints: list[dict[str, Any]],
         symbols: list[str] | None = None,
+        thinking_type: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
+        request_mode = {
+            "thinkingType": _normalize_thinking_type(thinking_type or self.thinking_type),
+            "reasoningEffort": _normalize_reasoning_effort(
+                reasoning_effort or self.reasoning_effort
+            ),
+        }
         context = {
             "items": items[:30],
             "keywords": keywords[:20],
             "sectorHints": sector_hints[:12],
             "symbols": list(symbols or []),
         }
-        metadata_base = self._build_metadata_base(context)
-        cache_key = self._build_cache_key(context, metadata_base["inputDigest"])
+        metadata_base = self._build_metadata_base(context, request_mode)
+        cache_key = self._build_cache_key(
+            context,
+            metadata_base["inputDigest"],
+            request_mode,
+        )
 
         if not self.api_key:
             return self._heuristic_prediction(
@@ -97,28 +115,33 @@ class DeepSeekMarketPredictionService:
 
         try:
             started_at = perf_counter()
+            request_payload: dict[str, Any] = {
+                "model": self.model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": PREDICTION_SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": json.dumps(context, ensure_ascii=False),
+                    },
+                ],
+                "temperature": 0.2,
+                "max_tokens": 1200,
+                "response_format": {"type": "json_object"},
+                "thinking": {"type": request_mode["thinkingType"]},
+            }
+            if request_mode["thinkingType"] == "enabled":
+                request_payload["reasoning_effort"] = request_mode["reasoningEffort"]
+
             response = self.session.post(
                 f"{self.base_url}/chat/completions",
                 headers={
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": PREDICTION_SYSTEM_PROMPT,
-                        },
-                        {
-                            "role": "user",
-                            "content": json.dumps(context, ensure_ascii=False),
-                        },
-                    ],
-                    "temperature": 0.2,
-                    "max_tokens": 1200,
-                    "response_format": {"type": "json_object"},
-                },
+                json=request_payload,
                 timeout=self.timeout,
             )
             response.raise_for_status()
@@ -136,6 +159,7 @@ class DeepSeekMarketPredictionService:
                 "predictionMetadata": {
                     "provider": "deepseek",
                     "model": self.model,
+                    "requestMode": "remote",
                     "degraded": False,
                     "cached": False,
                     "cacheKey": cache_key,
@@ -226,6 +250,7 @@ class DeepSeekMarketPredictionService:
             "predictionMetadata": {
                 "provider": "local_heuristic",
                 "model": "keyword-sector-rules",
+                "requestMode": "heuristic",
                 "degraded": True,
                 "cached": False,
                 "cacheKey": cache_key,
@@ -265,21 +290,32 @@ class DeepSeekMarketPredictionService:
         notes = _string_list(value)
         return notes or self._default_risk_notes()
 
-    def _build_metadata_base(self, context: dict[str, Any]) -> dict[str, Any]:
+    def _build_metadata_base(
+        self,
+        context: dict[str, Any],
+        request_mode: dict[str, str],
+    ) -> dict[str, Any]:
         return {
             "schemaVersion": PREDICTION_SCHEMA_VERSION,
             "inputDigest": _digest_payload(context),
+            **request_mode,
             "newsItemCount": len(context["items"]),
             "keywordCount": len(context["keywords"]),
             "sectorHintCount": len(context["sectorHints"]),
             "symbolCount": len(context["symbols"]),
         }
 
-    def _build_cache_key(self, context: dict[str, Any], input_digest: str) -> str:
+    def _build_cache_key(
+        self,
+        context: dict[str, Any],
+        input_digest: str,
+        request_mode: dict[str, str],
+    ) -> str:
         cache_payload = {
             "model": self.model,
             "schemaVersion": PREDICTION_SCHEMA_VERSION,
             "inputDigest": input_digest,
+            **request_mode,
             "symbols": context["symbols"],
         }
         return _digest_payload(cache_payload)
@@ -301,6 +337,20 @@ def _normalize_direction(value: Any) -> str:
     if normalized in {"down", "negative", "short"}:
         return "bearish"
     return "neutral"
+
+
+def _normalize_thinking_type(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"enabled", "disabled"}:
+        return normalized
+    return DEFAULT_THINKING_TYPE
+
+
+def _normalize_reasoning_effort(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"high", "max"}:
+        return normalized
+    return DEFAULT_REASONING_EFFORT
 
 
 def _bounded_float(value: Any, *, default: float, upper: float = 1.0) -> float:

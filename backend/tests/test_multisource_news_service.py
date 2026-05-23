@@ -102,6 +102,10 @@ def test_multi_source_news_service_merges_dedupes_and_reports_channels() -> None
     assert payload["sourceQuality"]["succeededChannels"] == 2
     assert payload["sourceQuality"]["failedChannels"] == 0
     assert payload["sourceQuality"]["duplicateItems"] == 1
+    assert payload["sourceQuality"]["qualityScore"] > 0
+    assert payload["sourceQuality"]["coverageScore"] > 0
+    assert payload["sourceQuality"]["reliabilityScore"] == 100
+    assert payload["sourceQuality"]["qualityNotes"]
     assert payload["dedupeMetadata"]["strategy"] == "source-url-or-normalized-title-content"
     assert payload["dedupeMetadata"]["originalCount"] == 4
     assert payload["dedupeMetadata"]["uniqueCount"] == 3
@@ -126,4 +130,5 @@ def test_multi_source_news_service_degrades_when_extra_channel_fails() -> None:
     assert payload["channels"][1]["status"] == "failed"
     assert payload["sourceQuality"]["failedChannels"] == 1
     assert payload["sourceQuality"]["succeededChannels"] == 1
+    assert payload["sourceQuality"]["qualityScore"] < 100
     assert "static channel unavailable" in payload["warnings"][0]

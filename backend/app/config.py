@@ -42,10 +42,17 @@ class DefaultConfig:
     DEEPSEEK_API_KEY = os.getenv("BACKEND_DEEPSEEK_API_KEY", "")
     DEEPSEEK_BASE_URL = os.getenv("BACKEND_DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     DEEPSEEK_MODEL = os.getenv("BACKEND_DEEPSEEK_MODEL", "deepseek-v4-flash")
+    DEEPSEEK_THINKING_TYPE = os.getenv("BACKEND_DEEPSEEK_THINKING_TYPE", "enabled")
+    DEEPSEEK_REASONING_EFFORT = os.getenv(
+        "BACKEND_DEEPSEEK_REASONING_EFFORT",
+        "high",
+    )
     DEEPSEEK_TIMEOUT = int(os.getenv("BACKEND_DEEPSEEK_TIMEOUT", str(HTTP_TIMEOUT)))
     DEEPSEEK_CACHE_TTL_SECONDS = int(
         os.getenv("BACKEND_DEEPSEEK_CACHE_TTL_SECONDS", "300")
     )
+    PREDICTION_HISTORY_PATH = os.getenv("BACKEND_PREDICTION_HISTORY_PATH", "")
+    PREDICTION_HISTORY_LIMIT = int(os.getenv("BACKEND_PREDICTION_HISTORY_LIMIT", "200"))
     CORS_ORIGINS = [
         origin.strip()
         for origin in os.getenv("BACKEND_CORS_ORIGINS", "http://localhost:3000").split(",")

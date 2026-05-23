@@ -5,6 +5,12 @@ import { useEffect, useState } from "react";
 import { getBacktestPresets, runBacktests } from "@/lib/api";
 import { StateSurface } from "@/components/workbench-layout";
 import {
+  displayExecutionMode,
+  displayText,
+  displayTone,
+  displayTradeAction,
+} from "@/lib/display";
+import {
   applyQuickProfile,
   BACKTEST_QUICK_PROFILES,
   buildBacktestFormSummary,
@@ -173,7 +179,7 @@ export function BacktestConsole() {
         <article className="panel">
           <div className="panel-header">
             <div>
-              <div className="eyebrow">Structured Inputs</div>
+              <div className="eyebrow">结构化输入</div>
               <h2 className="panel-title">把输入按研究思路分组，而不是堆成长表单</h2>
               <p className="panel-subtitle">
                 市场范围、策略、执行、成本和风险是五组不同的决策。每一组都会在提交前和结果后重复回显，减少“跑完才想起自己设了什么”的情况。
@@ -181,11 +187,11 @@ export function BacktestConsole() {
             </div>
           </div>
 
-          {error ? <StateSurface state="error" title="Backtest request needs attention." detail={error} /> : null}
+          {error ? <StateSurface state="error" title="回测请求需要处理。" detail={error} /> : null}
           {result && !error ? (
             <StateSurface
               state="ready"
-              title="Backtest response is ready."
+              title="回测响应已返回。"
               detail={`已返回 ${result.results.length} 个标的结果，失败 ${result.failures.length} 个。`}
             />
           ) : null}
@@ -210,7 +216,7 @@ export function BacktestConsole() {
               description="先确定标的、时间、复权方式和可选基准。当前仍是单标的批量回测，不是组合级撮合。"
             >
               <div className="field-grid">
-                <label htmlFor="symbolsInput">Symbols</label>
+                <label htmlFor="symbolsInput">标的代码</label>
                 <input
                   id="symbolsInput"
                   value={form.symbolsInput}
@@ -224,7 +230,7 @@ export function BacktestConsole() {
 
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="benchmarkSymbol">Benchmark</label>
+                  <label htmlFor="benchmarkSymbol">基准代码</label>
                   <input
                     id="benchmarkSymbol"
                     value={form.benchmarkSymbol}
@@ -235,7 +241,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="adjust">Adjust</label>
+                  <label htmlFor="adjust">复权方式</label>
                   <select
                     id="adjust"
                     value={form.adjust}
@@ -246,16 +252,16 @@ export function BacktestConsole() {
                       }))
                     }
                   >
-                    <option value="qfq">qfq</option>
-                    <option value="hfq">hfq</option>
-                    <option value="">none</option>
+                    <option value="qfq">前复权</option>
+                    <option value="hfq">后复权</option>
+                    <option value="">不复权</option>
                   </select>
                 </div>
               </div>
 
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="startDate">Start Date</label>
+                  <label htmlFor="startDate">开始日期</label>
                   <input
                     id="startDate"
                     type="date"
@@ -266,7 +272,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="endDate">End Date</label>
+                  <label htmlFor="endDate">结束日期</label>
                   <input
                     id="endDate"
                     type="date"
@@ -281,11 +287,11 @@ export function BacktestConsole() {
 
             <FormSection
               title="策略与参数"
-              description="预设模式从 backend 动态读取参数 schema；自定义模式继续遵循 `generate_signals(data, ctx)` 契约。"
+              description="预设模式从后端动态读取参数 schema；自定义模式继续遵循 generate_signals(data, ctx) 契约。"
             >
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="strategyMode">Strategy Mode</label>
+                  <label htmlFor="strategyMode">策略模式</label>
                   <select
                     id="strategyMode"
                     value={form.strategyMode}
@@ -300,12 +306,12 @@ export function BacktestConsole() {
                       }
                     }}
                   >
-                    <option value="preset">Preset</option>
-                    <option value="custom">Custom</option>
+                    <option value="preset">预设策略</option>
+                    <option value="custom">自定义策略</option>
                   </select>
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="strategyPreset">Preset</label>
+                  <label htmlFor="strategyPreset">策略预设</label>
                   <select
                     disabled={form.strategyMode !== "preset"}
                     id="strategyPreset"
@@ -325,7 +331,7 @@ export function BacktestConsole() {
                 <>
                   <div className="preset-summary">
                     <div className="preset-card" data-active="true">
-                      <span className="metric-label">Preset Summary</span>
+                      <span className="metric-label">预设摘要</span>
                       <strong>{currentPreset.summary}</strong>
                       <p>{currentPreset.useCase}</p>
                       <small>{currentPreset.riskNotes}</small>
@@ -361,7 +367,7 @@ export function BacktestConsole() {
 
               <div className="field-grid">
                 <label htmlFor="strategyCode">
-                  {form.strategyMode === "preset" ? "Preset Code Preview" : "Strategy Code"}
+                  {form.strategyMode === "preset" ? "预设代码预览" : "策略代码"}
                 </label>
                 <textarea
                   id="strategyCode"
@@ -380,7 +386,7 @@ export function BacktestConsole() {
             >
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="initialCapital">Initial Capital</label>
+                  <label htmlFor="initialCapital">初始资金</label>
                   <input
                     id="initialCapital"
                     type="number"
@@ -389,7 +395,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="executionMode">Execution Mode</label>
+                  <label htmlFor="executionMode">成交模式</label>
                   <select
                     id="executionMode"
                     value={form.executionMode}
@@ -400,18 +406,18 @@ export function BacktestConsole() {
                       }))
                     }
                   >
-                    <option value="close">close</option>
-                    <option value="next_open">next_open</option>
+                    <option value="close">当日收盘成交</option>
+                    <option value="next_open">次日开盘成交</option>
                   </select>
                   <span className="field-hint">
-                    `next_open` 在最后一根 K 线没有下一日开盘价时会忽略该次信号变化。
+                    次日开盘成交在最后一根 K 线没有下一日开盘价时会忽略该次信号变化。
                   </span>
                 </div>
               </div>
 
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="positionSize">Position Size</label>
+                  <label htmlFor="positionSize">单次仓位</label>
                   <input
                     id="positionSize"
                     max="1"
@@ -423,7 +429,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="lotSize">Lot Size</label>
+                  <label htmlFor="lotSize">最小手数</label>
                   <input
                     id="lotSize"
                     step="100"
@@ -441,7 +447,7 @@ export function BacktestConsole() {
             >
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="tradingFee">Trading Fee</label>
+                  <label htmlFor="tradingFee">交易佣金</label>
                   <input
                     id="tradingFee"
                     step="0.0001"
@@ -451,7 +457,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="stampTax">Stamp Tax</label>
+                  <label htmlFor="stampTax">印花税</label>
                   <input
                     id="stampTax"
                     step="0.0001"
@@ -464,7 +470,7 @@ export function BacktestConsole() {
 
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="slippage">Slippage</label>
+                  <label htmlFor="slippage">滑点</label>
                   <input
                     id="slippage"
                     step="0.0001"
@@ -474,7 +480,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label htmlFor="stopLoss">Stop Loss</label>
+                  <label htmlFor="stopLoss">止损阈值</label>
                   <input
                     id="stopLoss"
                     step="0.001"
@@ -487,7 +493,7 @@ export function BacktestConsole() {
 
               <div className="field-row">
                 <div className="field-grid">
-                  <label htmlFor="takeProfit">Take Profit</label>
+                  <label htmlFor="takeProfit">止盈阈值</label>
                   <input
                     id="takeProfit"
                     step="0.001"
@@ -497,7 +503,7 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label>Request Scope</label>
+                  <label>请求范围</label>
                   <div className="submit-note">
                     当前会发送 {symbolCount || 0} 个标的。多标的是逐标的执行，不是组合级撮合。
                   </div>
@@ -507,17 +513,17 @@ export function BacktestConsole() {
 
             <div className="submit-row">
               <div className="submit-note">
-                backend 会先校验 schema，再通过 AKQuant runtime adapter 执行回测。前端会保留输入，不会在失败时清空表单。
+                后端会先校验 schema，再通过 AKQuant 运行适配器执行回测。前端会保留输入，不会在失败时清空表单。
               </div>
               <button className="primary-button" disabled={loading} type="submit">
-                {loading ? "Running" : "Run Backtests"}
+                {loading ? "运行中" : "运行回测"}
               </button>
             </div>
           </form>
         </article>
 
         <aside className="panel">
-          <div className="eyebrow">Workbench Summary</div>
+          <div className="eyebrow">提交复核</div>
           <h2 className="panel-title">提交前快速复核</h2>
           <p className="panel-subtitle">
             左边负责配置，右边负责帮你复核当前请求的核心假设，避免埋头改参数时忽略关键限制。
@@ -544,7 +550,7 @@ export function BacktestConsole() {
             <div className="status-list">
               <div className="status-item" data-status="migrated">
                 <div className="status-head">
-                  <strong>Preset Focus</strong>
+                  <strong>预设重点</strong>
                   <span className="status-pill">{currentPreset.label}</span>
                 </div>
                 <p>{currentPreset.summary}</p>
@@ -560,15 +566,15 @@ export function BacktestConsole() {
               </div>
               <div className="status-item" data-status="migrated">
                 <div className="status-head">
-                  <strong>Use Case</strong>
-                  <span className="status-pill">guidance</span>
+                  <strong>适用场景</strong>
+                  <span className="status-pill">说明</span>
                 </div>
                 <p>{currentPreset.useCase}</p>
               </div>
               <div className="status-item" data-status="skeleton">
                 <div className="status-head">
-                  <strong>Risk Note</strong>
-                  <span className="status-pill">watch</span>
+                  <strong>风险提示</strong>
+                  <span className="status-pill">关注</span>
                 </div>
                 <p>{currentPreset.riskNotes}</p>
               </div>
@@ -580,10 +586,10 @@ export function BacktestConsole() {
       <article className="panel">
         <div className="panel-header">
           <div>
-            <div className="eyebrow">Structured Report</div>
+            <div className="eyebrow">结构化报告</div>
             <h2 className="panel-title">结果不只看收益，也看假设、风险和执行</h2>
             <p className="panel-subtitle">
-              输出会分成收益指标、执行假设、相对基准、交易统计、charts 和成交记录。这样更适合做研究复盘，而不是只截图一串收益率。
+              输出会分成收益指标、执行假设、相对基准、交易统计、图表和成交记录。这样更适合做研究复盘，而不是只截图一串收益率。
             </p>
           </div>
         </div>
@@ -639,7 +645,7 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
             <div>
               <h3>{item.symbol}</h3>
               <p>
-                {item.settings.strategyLabel} · {item.settings.executionMode} ·{" "}
+                {item.settings.strategyLabel} · {displayExecutionMode(item.settings.executionMode)} ·{" "}
                 {item.settings.engine || "akquant"} {item.settings.engineVersion || ""}
               </p>
             </div>
@@ -648,11 +654,11 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
               <span className="tag-chip">手数 {item.settings.lotSize}</span>
               {item.settings.fillPolicy ? (
                 <span className="tag-chip">
-                  {item.settings.fillPolicy.priceBasis}/{item.settings.fillPolicy.temporal}
+                  成交 {item.settings.fillPolicy.priceBasis}/{item.settings.fillPolicy.temporal}
                 </span>
               ) : null}
               <span className="tag-chip">
-                source {item.settings.primarySource || "unknown"}
+                来源 {displayText(item.settings.primarySource, "未知")}
               </span>
             </div>
           </div>
@@ -715,20 +721,20 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
           <table className="trade-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Action</th>
-                <th>Reason</th>
-                <th>Shares</th>
-                <th>Price</th>
-                <th>Fee+Tax</th>
+                <th>日期</th>
+                <th>动作</th>
+                <th>原因</th>
+                <th>股数</th>
+                <th>价格</th>
+                <th>费用税费</th>
               </tr>
             </thead>
             <tbody>
               {item.trades.slice(0, 6).map((trade) => (
                 <tr key={`${trade.date}-${trade.action}-${trade.price}`}>
                   <td>{trade.date}</td>
-                  <td>{trade.action}</td>
-                  <td>{trade.reason}</td>
+                  <td>{displayTradeAction(trade.action)}</td>
+                  <td>{displayText(trade.reason)}</td>
                   <td>{trade.shares}</td>
                   <td>{trade.price.toFixed(2)}</td>
                   <td>{(trade.fee + trade.tax).toFixed(2)}</td>
@@ -771,7 +777,7 @@ function InsightCard({ insight }: { insight: BacktestInsight }) {
     <div className="insight-card" data-tone={insight.tone}>
       <div className="status-head">
         <strong>{insight.title}</strong>
-        <span className="status-pill">{insight.tone}</span>
+        <span className="status-pill">{displayTone(insight.tone)}</span>
       </div>
       <p>{insight.detail}</p>
     </div>
@@ -862,7 +868,7 @@ function groupParameterSchema(preset: BacktestPreset | null): Array<[string, Bac
 
 function formatCurrency(value?: number | null): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
-    return "N/A";
+    return "暂无";
   }
   return `¥${value.toFixed(2)}`;
 }

@@ -39,6 +39,11 @@ class MarketNewsQuery(BaseModel):
 
     limit: int = Field(default=100, ge=1, le=100)
     symbols: list[str] = Field(default_factory=list)
+    thinking: Literal["enabled", "disabled"] | None = None
+    reasoning_effort: Literal["high", "max"] | None = Field(
+        default=None,
+        alias="reasoningEffort",
+    )
 
     @field_validator("symbols", mode="before")
     @classmethod
@@ -50,3 +55,9 @@ class MarketNewsQuery(BaseModel):
         else:
             items = value or []
         return [str(item).strip() for item in items if str(item).strip()]
+
+
+class PredictionHistoryQuery(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
+    limit: int = Field(default=20, ge=1, le=100)

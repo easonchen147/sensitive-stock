@@ -104,7 +104,13 @@ class StubNewsIntelligenceService:
             ],
         }
 
-    def build_predictions(self, limit: int = 100, symbols: list[str] | None = None) -> dict:
+    def build_predictions(
+        self,
+        limit: int = 100,
+        symbols: list[str] | None = None,
+        thinking_type: str | None = None,
+        reasoning_effort: str | None = None,
+    ) -> dict:
         self.seen_limit = limit
         return {
             **self.build_intelligence(limit=limit),

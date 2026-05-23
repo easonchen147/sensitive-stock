@@ -319,6 +319,12 @@ export type MarketNewsSourceQuality = {
   uniqueItems: number;
   duplicateItems: number;
   sourceCoverage: string[];
+  qualityScore?: number;
+  coverageScore?: number;
+  freshnessScore?: number;
+  reliabilityScore?: number;
+  duplicatePressure?: number;
+  qualityNotes?: string[];
 };
 
 export type MarketNewsDedupeMetadata = {
@@ -349,11 +355,14 @@ export type MarketNewsIntelligenceResponse = MarketNewsResponse & {
 export type MarketPredictionMetadata = {
   provider: string;
   model: string;
+  requestMode?: "remote" | "heuristic";
   degraded: boolean;
   cached: boolean;
   schemaVersion: string;
   cacheKey: string;
   inputDigest: string;
+  thinkingType?: "enabled" | "disabled";
+  reasoningEffort?: "high" | "max";
   newsItemCount: number;
   keywordCount: number;
   sectorHintCount: number;
@@ -363,6 +372,7 @@ export type MarketPredictionMetadata = {
 };
 
 export type MarketPrediction = {
+  predictionId?: string;
   targetType: string;
   target: string;
   direction: "bullish" | "neutral" | "bearish";
@@ -382,11 +392,65 @@ export type MarketPredictionBacktestHandoff = {
 };
 
 export type MarketNewsPredictionsResponse = MarketNewsIntelligenceResponse & {
+  runId?: string;
+  createdAt?: string;
   predictionMetadata: MarketPredictionMetadata;
   predictions: MarketPrediction[];
   predictionSummary?: string;
   riskNotes: string[];
   backtestHandoff: MarketPredictionBacktestHandoff;
+};
+
+export type MarketPredictionHistoryRun = {
+  runId: string;
+  createdAt: string;
+  provider?: string;
+  model?: string;
+  thinkingType?: string;
+  reasoningEffort?: string;
+  degraded: boolean;
+  predictionCount: number;
+  qualityScore?: number;
+  summary?: string;
+};
+
+export type MarketPredictionHistoryResponse = {
+  items: MarketPredictionHistoryRun[];
+  metadata: CapabilityMetadata;
+};
+
+export type MarketPredictionDetailResponse = MarketNewsPredictionsResponse & {
+  runId: string;
+  createdAt: string;
+};
+
+export type MarketPredictionEvaluationStatus = "hit" | "miss" | "neutral" | "pending";
+
+export type MarketPredictionEvaluationSummary = {
+  total: number;
+  assessable: number;
+  hit: number;
+  miss: number;
+  neutral: number;
+  pending: number;
+  hitRate?: number | null;
+};
+
+export type MarketPredictionEvaluationItem = {
+  predictionId: string;
+  target: string;
+  direction: "bullish" | "neutral" | "bearish";
+  status: MarketPredictionEvaluationStatus;
+  actualChangePercent?: number | null;
+  note: string;
+};
+
+export type MarketPredictionEvaluationResponse = {
+  runId: string;
+  evaluatedAt: string;
+  evaluationSummary: MarketPredictionEvaluationSummary;
+  evaluationItems: MarketPredictionEvaluationItem[];
+  metadata: CapabilityMetadata;
 };
 
 export type CapabilityMetadata = {

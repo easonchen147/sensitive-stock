@@ -429,6 +429,8 @@ class MarketNewsIntelligenceService:
         self,
         limit: int = 100,
         symbols: list[str] | None = None,
+        thinking_type: str | None = None,
+        reasoning_effort: str | None = None,
     ) -> dict[str, Any]:
         latest_payload = self.news_service.get_latest(limit=limit)
         keywords = self._extract_keywords(latest_payload["items"])
@@ -438,6 +440,8 @@ class MarketNewsIntelligenceService:
             keywords=keywords,
             sector_hints=sector_hints,
             symbols=symbols or [],
+            thinking_type=thinking_type,
+            reasoning_effort=reasoning_effort,
         )
         return {
             **latest_payload,
@@ -622,21 +626,104 @@ def _build_source_quality(
     unique_items: list[dict[str, Any]],
     dedupe_metadata: dict[str, Any],
 ) -> dict[str, Any]:
+    queried_channels = len(channels)
+    succeeded_channels = sum(1 for channel in channels if channel["status"] == "ok")
+    degraded_channels = sum(1 for channel in channels if channel["status"] == "degraded")
+    failed_channels = sum(1 for channel in channels if channel["status"] == "failed")
+    total_items = len(original_items)
+    unique_items_count = len(unique_items)
+    duplicate_items = int(dedupe_metadata["duplicateCount"])
+    source_coverage = sorted(
+        {
+            str(item.get("source") or "unknown")
+            for item in unique_items
+            if str(item.get("source") or "").strip()
+        }
+    )
+    score_payload = _score_source_quality(
+        queried_channels=queried_channels,
+        succeeded_channels=succeeded_channels,
+        degraded_channels=degraded_channels,
+        failed_channels=failed_channels,
+        total_items=total_items,
+        unique_items=unique_items_count,
+        duplicate_items=duplicate_items,
+    )
     return {
         "queriedChannels": len(channels),
-        "succeededChannels": sum(1 for channel in channels if channel["status"] == "ok"),
-        "degradedChannels": sum(1 for channel in channels if channel["status"] == "degraded"),
-        "failedChannels": sum(1 for channel in channels if channel["status"] == "failed"),
-        "totalItems": len(original_items),
-        "uniqueItems": len(unique_items),
-        "duplicateItems": int(dedupe_metadata["duplicateCount"]),
-        "sourceCoverage": sorted(
-            {
-                str(item.get("source") or "unknown")
-                for item in unique_items
-                if str(item.get("source") or "").strip()
-            }
+        "succeededChannels": succeeded_channels,
+        "degradedChannels": degraded_channels,
+        "failedChannels": failed_channels,
+        "totalItems": total_items,
+        "uniqueItems": unique_items_count,
+        "duplicateItems": duplicate_items,
+        "sourceCoverage": source_coverage,
+        **score_payload,
+    }
+
+
+def _score_source_quality(
+    *,
+    queried_channels: int,
+    succeeded_channels: int,
+    degraded_channels: int,
+    failed_channels: int,
+    total_items: int,
+    unique_items: int,
+    duplicate_items: int,
+) -> dict[str, Any]:
+    if queried_channels <= 0:
+        return {
+            "qualityScore": 0,
+            "coverageScore": 0,
+            "freshnessScore": 0,
+            "reliabilityScore": 0,
+            "duplicatePressure": 0,
+            "qualityNotes": ["没有可用资讯渠道。"],
+        }
+
+    coverage_score = round(min(100.0, (unique_items / max(total_items, 1)) * 100), 2)
+    reliability_score = round(
+        max(
+            0.0,
+            ((succeeded_channels + degraded_channels * 0.5) / queried_channels) * 100,
         ),
+        2,
+    )
+    freshness_score = round(min(100.0, (unique_items / 20) * 100), 2)
+    duplicate_pressure = round((duplicate_items / max(total_items, 1)) * 100, 2)
+    quality_score = round(
+        max(
+            0.0,
+            min(
+                100.0,
+                reliability_score * 0.45
+                + coverage_score * 0.3
+                + freshness_score * 0.2
+                - duplicate_pressure * 0.15,
+            ),
+        ),
+        2,
+    )
+    notes = [
+        (
+            f"已查询 {queried_channels} 个资讯渠道，成功 {succeeded_channels} 个，"
+            f"失败 {failed_channels} 个。"
+        ),
+        f"合并前 {total_items} 条，去重后 {unique_items} 条，重复压力 {duplicate_pressure:.2f}%。",
+    ]
+    if failed_channels:
+        notes.append("存在失败渠道，预测置信度需要下调参考。")
+    if duplicate_pressure > 30:
+        notes.append("重复资讯较多，热点可能被单一事件放大。")
+
+    return {
+        "qualityScore": quality_score,
+        "coverageScore": coverage_score,
+        "freshnessScore": freshness_score,
+        "reliabilityScore": reliability_score,
+        "duplicatePressure": duplicate_pressure,
+        "qualityNotes": notes,
     }
 
 
