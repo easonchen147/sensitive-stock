@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import akshare as ak
@@ -26,11 +27,31 @@ class AkshareMarketDataService:
         timeout: int = 10,
         cache_ttl_seconds: int = 300,
         retry_attempts: int = 2,
+        tickflow_client_factory: Any | None = None,
+        tickflow_api_key: str | None = None,
+        tickflow_base_url: str | None = None,
+        tickflow_timeout: int | None = None,
     ) -> None:
         self.akshare_client = akshare_client or ak
         self.session = session or requests.Session()
         self.timeout = timeout
         self.retry_attempts = max(1, retry_attempts)
+        self.tickflow_client_factory = tickflow_client_factory
+        resolved_tickflow_api_key = (
+            tickflow_api_key
+            if tickflow_api_key is not None
+            else os.environ.get("TICKFLOW_API_KEY", "")
+        )
+        self.tickflow_api_key = resolved_tickflow_api_key.strip()
+        self.tickflow_base_url = (
+            tickflow_base_url
+            if tickflow_base_url is not None
+            else os.environ.get("TICKFLOW_BASE_URL", "https://api.tickflow.org")
+        ).strip()
+        self.tickflow_timeout = int(
+            tickflow_timeout or os.environ.get("BACKEND_TICKFLOW_TIMEOUT", timeout)
+        )
+        self._tickflow_client = None
         self._cache: TTLCache[tuple[Any, ...], dict[str, Any]] = TTLCache(cache_ttl_seconds)
 
     def get_market_overview(self) -> dict[str, Any]:
@@ -58,6 +79,26 @@ class AkshareMarketDataService:
                 "items": items,
             }
         except Exception as primary_error:
+            if self._has_tickflow_quote_provider():
+                try:
+                    items = self._fetch_quotes_from_tickflow(normalized_symbols)
+                    warning = (
+                        "主行情报价源暂不可用，已切换 TickFlow 备用报价源："
+                        f"{_format_error(primary_error)}"
+                    )
+                    payload = {
+                        "source": "tickflow",
+                        "degraded": True,
+                        "warnings": [warning],
+                        "items": items,
+                    }
+                    self._cache.set(cache_key, payload)
+                    return payload
+                except Exception as tickflow_error:
+                    primary_error = RuntimeError(
+                        f"{_format_error(primary_error)}; TickFlow fallback failed: "
+                        f"{_format_error(tickflow_error)}"
+                    )
             try:
                 items = self._fetch_quotes_from_eastmoney(normalized_symbols)
                 warning = (
@@ -173,6 +214,9 @@ class AkshareMarketDataService:
 
         return SmartDataProvider().describe_sources()
 
+    def _has_tickflow_quote_provider(self) -> bool:
+        return bool(self.tickflow_client_factory or self.tickflow_api_key)
+
     def _normalize_quote_rows(
         self,
         dataframe: pd.DataFrame,
@@ -286,6 +330,68 @@ class AkshareMarketDataService:
             )
         return items
 
+    def _get_tickflow_client(self):
+        if self.tickflow_client_factory is not None:
+            return self.tickflow_client_factory()
+        if self._tickflow_client is not None:
+            return self._tickflow_client
+
+        if not self.tickflow_api_key:
+            raise RuntimeError("TickFlow quote fallback requires TICKFLOW_API_KEY")
+
+        from tickflow import TickFlow
+
+        kwargs = {"api_key": self.tickflow_api_key, "timeout": self.tickflow_timeout}
+        if self.tickflow_base_url:
+            kwargs["base_url"] = self.tickflow_base_url
+        self._tickflow_client = TickFlow(**kwargs)
+        return self._tickflow_client
+
+    def _fetch_quotes_from_tickflow(self, symbols: list[str]) -> list[dict[str, Any]]:
+        from backtesting.data import _symbol_to_exchange_suffix
+
+        client = self._get_tickflow_client()
+        tickflow_symbols = [_symbol_to_exchange_suffix(symbol) for symbol in symbols]
+        quotes = client.quotes.get(symbols=tickflow_symbols)
+        if not quotes:
+            raise RuntimeError("TickFlow quote response is empty")
+        return self._normalize_tickflow_quote_rows(quotes, symbols)
+
+    def _normalize_tickflow_quote_rows(
+        self,
+        rows: list[dict[str, Any]],
+        symbols: list[str],
+    ) -> list[dict[str, Any]]:
+        expected = {symbol.zfill(6) for symbol in symbols}
+        items: list[dict[str, Any]] = []
+        for row in rows:
+            raw_symbol = str(row.get("symbol") or "")
+            symbol = raw_symbol.split(".", 1)[0].zfill(6)
+            if expected and symbol not in expected:
+                continue
+            ext = row.get("ext") or {}
+            last_price = _safe_float(row.get("last_price"))
+            prev_close = _safe_float(row.get("prev_close"))
+            change_amount = _safe_float(ext.get("change_amount"))
+            if change_amount is None and last_price is not None and prev_close is not None:
+                change_amount = last_price - prev_close
+            items.append(
+                {
+                    "symbol": symbol,
+                    "name": row.get("name") or ext.get("name"),
+                    "price": last_price,
+                    "changePercent": _safe_percent(ext.get("change_pct")),
+                    "changeAmount": change_amount,
+                    "volume": _safe_float(row.get("volume")),
+                    "amount": _safe_float(row.get("amount")),
+                    "open": _safe_float(row.get("open")),
+                    "preClose": prev_close,
+                    "high": _safe_float(row.get("high")),
+                    "low": _safe_float(row.get("low")),
+                }
+            )
+        return items
+
     def _fetch_sectors_from_eastmoney(self, limit: int, sector_type: str) -> list[dict[str, Any]]:
         params = {
             "pn": 1,
@@ -346,3 +452,12 @@ def _format_error(error: Exception | None) -> str:
     if error is None:
         return "未知错误"
     return f"{error.__class__.__name__}: {error}"
+
+
+def _safe_percent(value: Any) -> float | None:
+    number = _safe_float(value)
+    if number is None:
+        return None
+    if abs(number) <= 1:
+        return number * 100.0
+    return number

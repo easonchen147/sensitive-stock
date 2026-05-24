@@ -20,6 +20,21 @@ class DefaultConfig:
         max(int(os.getenv("BACKEND_MARKET_NEWS_LIMIT", "100")), 1),
         100,
     )
+    MARKET_DATA_ENABLE_TICKFLOW = os.getenv(
+        "BACKEND_MARKET_DATA_ENABLE_TICKFLOW",
+        "true",
+    ).lower() not in {"0", "false", "no", "off"}
+    MARKET_DATA_PREFER_TICKFLOW = os.getenv(
+        "BACKEND_MARKET_DATA_PREFER_TICKFLOW",
+        "false",
+    ).lower() in {"1", "true", "yes", "on"}
+    TICKFLOW_API_KEY = os.getenv("TICKFLOW_API_KEY", "")
+    TICKFLOW_BASE_URL = os.getenv("TICKFLOW_BASE_URL", "https://api.tickflow.org")
+    TICKFLOW_FREE_BASE_URL = os.getenv(
+        "TICKFLOW_FREE_BASE_URL",
+        "https://free-api.tickflow.org",
+    )
+    TICKFLOW_TIMEOUT = int(os.getenv("BACKEND_TICKFLOW_TIMEOUT", str(HTTP_TIMEOUT)))
     JIN10_FLASH_API_URL = os.getenv(
         "BACKEND_JIN10_FLASH_API_URL",
         "https://flash-api.jin10.com/get_flash_list",

@@ -25,6 +25,7 @@ class StubBacktestService:
                             "temporal": "same_cycle",
                         },
                         "positionSize": 0.9,
+                        "volumeLimitPct": 0.2,
                     },
                     "metrics": {
                         "strategy_total_return": 0.12,
@@ -76,6 +77,26 @@ class StubBacktestService:
                             "detail": "策略跑赢基准 8.00%。",
                         }
                     ],
+                    "dataQuality": {
+                        "selectedSource": "akshare",
+                        "sourceOrder": ["akshare", "tickflow", "sina_direct"],
+                    },
+                    "executionQuality": {
+                        "volumeLimitPct": 0.2,
+                        "filledOrderCount": 1,
+                        "rejectedOrderCount": 0,
+                    },
+                    "riskDiagnostics": {
+                        "maxDrawdownLimit": 0.1,
+                        "riskCooldownBars": 2,
+                    },
+                    "engineEvents": {
+                        "totalEvents": 1,
+                        "warningCount": 0,
+                        "errorCount": 0,
+                        "byType": {"finished": 1},
+                        "recentTypes": ["finished"],
+                    },
                 }
             ],
             "failures": [],
@@ -200,15 +221,23 @@ def test_backtest_endpoint_accepts_structured_workbench_payload() -> None:
                 "mode": "next_open",
                 "positionSize": 0.9,
                 "lotSize": 100,
+                "volumeLimitPct": 0.2,
             },
             "costs": {
                 "tradingFee": 0.0005,
                 "stampTax": 0.001,
                 "slippage": 0.0005,
+                "minCommission": 5,
+                "transferFeeRate": 0.00002,
             },
             "risk": {
                 "stopLoss": 0.05,
                 "takeProfit": 0.12,
+                "maxDrawdown": 0.1,
+                "maxDailyLoss": 800,
+                "maxPositionSize": 2000,
+                "reduceOnlyAfterRisk": True,
+                "riskCooldownBars": 2,
             },
             "initialCapital": 100000,
         },
@@ -223,9 +252,17 @@ def test_backtest_endpoint_accepts_structured_workbench_payload() -> None:
     assert service.seen_request.strategy.preset_id == "ma_cross"
     assert service.seen_request.execution.mode == "next_open"
     assert service.seen_request.execution.position_size == 0.9
+    assert service.seen_request.execution.volume_limit_pct == 0.2
     assert service.seen_request.costs.stamp_tax == 0.001
+    assert service.seen_request.costs.min_commission == 5
+    assert service.seen_request.costs.transfer_fee_rate == 0.00002
+    assert service.seen_request.risk.max_drawdown == 0.1
+    assert service.seen_request.risk.reduce_only_after_risk is True
+    assert service.seen_request.risk.risk_cooldown_bars == 2
     assert payload["results"][0]["comparison"]["excess_return"] == 0.08
     assert payload["results"][0]["trades"][0]["shares"] == 900
+    assert payload["results"][0]["dataQuality"]["selectedSource"] == "akshare"
+    assert payload["results"][0]["engineEvents"]["recentTypes"] == ["finished"]
 
 
 def test_backtest_presets_endpoint_returns_catalog() -> None:

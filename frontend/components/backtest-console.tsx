@@ -57,12 +57,20 @@ const INITIAL_FORM: BacktestFormValues = {
   executionMode: "close",
   positionSize: 1,
   lotSize: 100,
+  volumeLimitPct: 0.25,
   tradingFee: 0.0005,
   stampTax: 0.001,
   slippage: 0,
+  minCommission: 5,
+  transferFeeRate: 0.00002,
   adjust: "qfq",
   stopLoss: 0,
   takeProfit: 0,
+  maxDrawdown: 0,
+  maxDailyLoss: 0,
+  maxPositionSize: 0,
+  reduceOnlyAfterRisk: false,
+  riskCooldownBars: 0,
   params: {
     fast_window: 5,
     slow_window: 20,
@@ -145,6 +153,13 @@ export function BacktestConsole() {
     setForm((current) => ({
       ...current,
       [key]: Number(value),
+    }));
+  }
+
+  function updateBooleanField<K extends keyof BacktestFormValues>(key: K, value: boolean) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
     }));
   }
 
@@ -440,6 +455,28 @@ export function BacktestConsole() {
                   />
                 </div>
               </div>
+
+              <div className="field-row">
+                <div className="field-grid">
+                  <label htmlFor="volumeLimitPct">成交量限制</label>
+                  <input
+                    id="volumeLimitPct"
+                    max="1"
+                    min="0"
+                    step="0.01"
+                    type="number"
+                    value={form.volumeLimitPct}
+                    onChange={(event) => updateNumberField("volumeLimitPct", event.target.value)}
+                  />
+                  <span className="field-hint">限制单次成交不超过当根 K 线成交量的一定比例。</span>
+                </div>
+                <div className="field-grid">
+                  <label>执行说明</label>
+                  <div className="submit-note">
+                    该参数直接交给 AKQuant，用于模拟容量约束和无法完全成交的情况。
+                  </div>
+                </div>
+              </div>
             </FormSection>
 
             <FormSection
@@ -481,6 +518,31 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
+                  <label htmlFor="minCommission">最低佣金</label>
+                  <input
+                    id="minCommission"
+                    min="0"
+                    step="1"
+                    type="number"
+                    value={form.minCommission}
+                    onChange={(event) => updateNumberField("minCommission", event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="field-row">
+                <div className="field-grid">
+                  <label htmlFor="transferFeeRate">过户费率</label>
+                  <input
+                    id="transferFeeRate"
+                    min="0"
+                    step="0.00001"
+                    type="number"
+                    value={form.transferFeeRate}
+                    onChange={(event) => updateNumberField("transferFeeRate", event.target.value)}
+                  />
+                </div>
+                <div className="field-grid">
                   <label htmlFor="stopLoss">止损阈值</label>
                   <input
                     id="stopLoss"
@@ -504,10 +566,73 @@ export function BacktestConsole() {
                   />
                 </div>
                 <div className="field-grid">
-                  <label>请求范围</label>
-                  <div className="submit-note">
-                    当前会发送 {symbolCount || 0} 个标的。多标的是逐标的执行，不是组合级撮合。
-                  </div>
+                  <label htmlFor="maxDrawdown">最大回撤阈值</label>
+                  <input
+                    id="maxDrawdown"
+                    min="0"
+                    step="0.001"
+                    type="number"
+                    value={form.maxDrawdown}
+                    onChange={(event) => updateNumberField("maxDrawdown", event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="field-row">
+                <div className="field-grid">
+                  <label htmlFor="maxDailyLoss">日亏损阈值</label>
+                  <input
+                    id="maxDailyLoss"
+                    min="0"
+                    step="100"
+                    type="number"
+                    value={form.maxDailyLoss}
+                    onChange={(event) => updateNumberField("maxDailyLoss", event.target.value)}
+                  />
+                </div>
+                <div className="field-grid">
+                  <label htmlFor="maxPositionSize">最大持仓股数</label>
+                  <input
+                    id="maxPositionSize"
+                    min="0"
+                    step="100"
+                    type="number"
+                    value={form.maxPositionSize}
+                    onChange={(event) => updateNumberField("maxPositionSize", event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="field-row">
+                <div className="field-grid">
+                  <label htmlFor="riskCooldownBars">风控冷却周期</label>
+                  <input
+                    id="riskCooldownBars"
+                    min="0"
+                    step="1"
+                    type="number"
+                    value={form.riskCooldownBars}
+                    onChange={(event) => updateNumberField("riskCooldownBars", event.target.value)}
+                  />
+                </div>
+                <label className="field-grid" htmlFor="reduceOnlyAfterRisk">
+                  风控触发后只减仓
+                  <input
+                    checked={form.reduceOnlyAfterRisk}
+                    id="reduceOnlyAfterRisk"
+                    type="checkbox"
+                    onChange={(event) =>
+                      updateBooleanField("reduceOnlyAfterRisk", event.target.checked)
+                    }
+                  />
+                  <span className="field-hint">触发策略级风控后，不再新增开仓，只允许降低风险暴露。</span>
+                </label>
+              </div>
+
+              <div className="field-grid">
+                <label>请求范围</label>
+                <div className="submit-note">
+                  当前会发送 {symbolCount || 0} 个标的。多标的是逐标的执行，不是组合级撮合。
                 </div>
               </div>
             </FormSection>
@@ -653,13 +778,16 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
             <div className="tag-row">
               <span className="tag-chip">仓位 {(item.settings.positionSize * 100).toFixed(0)}%</span>
               <span className="tag-chip">手数 {item.settings.lotSize}</span>
+              <span className="tag-chip">
+                容量 {formatMetricValue(item.settings.volumeLimitPct)}
+              </span>
               {item.settings.fillPolicy ? (
                 <span className="tag-chip">
                   成交 {item.settings.fillPolicy.priceBasis}/{item.settings.fillPolicy.temporal}
                 </span>
               ) : null}
               <span className="tag-chip">
-                来源 {displayText(item.settings.primarySource, "未知")}
+                来源 {displayText(item.dataQuality.selectedSource || item.settings.primarySource, "未知")}
               </span>
             </div>
           </div>
@@ -679,6 +807,8 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
             <Metric title="年化" value={formatMetricValue(item.metrics.annualized_return)} />
             <Metric title="最大回撤" value={formatMetricValue(item.metrics.max_drawdown)} />
             <Metric title="夏普" value={formatDecimal(item.metrics.sharpe)} />
+            <Metric title="索提诺" value={formatDecimal(item.metrics.sortino)} />
+            <Metric title="卡玛" value={formatDecimal(item.metrics.calmar)} />
             <Metric title="波动率" value={formatMetricValue(item.metrics.volatility)} />
             <Metric title="超额收益" value={formatMetricValue(item.comparison.excess_return)} />
             <Metric title="期末权益" value={formatCurrency(item.tradeStats.endingEquity)} />
@@ -694,6 +824,8 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
               <InsightCard insight={insight} key={`${insight.title}-${insight.detail}`} />
             ))}
           </div>
+
+          <DiagnosticGrid item={item} />
 
           <div className="chart-grid">
             <SeriesChart
@@ -750,6 +882,58 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
           </table>
         </article>
       ))}
+    </div>
+  );
+}
+
+function DiagnosticGrid({ item }: { item: BacktestSymbolResult }) {
+  const dataQuality = item.dataQuality || {};
+  const executionQuality = item.executionQuality || {};
+  const riskDiagnostics = item.riskDiagnostics || {};
+  const engineEvents = item.engineEvents || {
+    totalEvents: 0,
+    warningCount: 0,
+    errorCount: 0,
+    byType: {},
+    recentTypes: [],
+  };
+
+  return (
+    <div className="metric-grid">
+      <Metric
+        title="行情来源"
+        value={displayText(dataQuality.selectedSource || dataQuality.primarySource, "未知")}
+      />
+      <Metric
+        title="行情样本"
+        value={`${dataQuality.tradingDays || 0} 日 / ${dataQuality.rowCount || 0} 行`}
+      />
+      <Metric
+        title="成交质量"
+        value={`${executionQuality.filledOrderCount || 0} 成交 / ${
+          executionQuality.rejectedOrderCount || 0
+        } 拒单`}
+      />
+      <Metric
+        title="容量限制"
+        value={formatMetricValue(executionQuality.volumeLimitPct)}
+      />
+      <Metric
+        title="风险阈值"
+        value={formatMetricValue(riskDiagnostics.maxDrawdownLimit)}
+      />
+      <Metric
+        title="实现回撤"
+        value={formatMetricValue(riskDiagnostics.realizedMaxDrawdown)}
+      />
+      <Metric
+        title="引擎事件"
+        value={`${engineEvents.totalEvents} 条 / 告警 ${engineEvents.warningCount}`}
+      />
+      <Metric
+        title="近期事件"
+        value={engineEvents.recentTypes.length ? engineEvents.recentTypes.join(" / ") : "暂无"}
+      />
     </div>
   );
 }

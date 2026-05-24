@@ -108,20 +108,36 @@ def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_sta
         "executionMode": "next_open",
         "positionSize": 0.8,
         "lotSize": 100,
+        "volumeLimitPct": 0.2,
         "tradingFee": 0.0005,
         "stampTax": 0.001,
         "slippage": 0.0003,
+        "minCommission": 5.0,
+        "transferFeeRate": 0.00002,
         "stopLoss": 0.06,
         "takeProfit": 0.18,
+        "maxDrawdown": 0.12,
+        "maxDailyLoss": 1000.0,
+        "maxPositionSize": 5000.0,
+        "reduceOnlyAfterRisk": True,
+        "riskCooldownBars": 3,
         "engine": "akquant",
         "engineVersion": "0.2.37",
+        "strategyRiskId": "signal_replay",
         "fillPolicy": {
             "priceBasis": "open",
             "barOffset": 1,
             "temporal": "same_cycle",
         },
         "primarySource": "akshare",
-        "fallbackSources": ["tushare", "sina_direct"],
+        "fallbackSources": ["tickflow", "tushare", "sina_direct"],
+        "sourceOrder": ["akshare", "tickflow", "tushare", "sina_direct"],
+        "lastSuccessSource": "akshare",
+        "providerErrors": [],
+        "skippedProviders": [],
+        "dataRows": 4,
+        "dataStartDate": "2025-01-02",
+        "dataEndDate": "2025-01-05",
     }
 
     payload = serialize_symbol_result(
@@ -130,6 +146,14 @@ def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_sta
         settings=settings,
         benchmark=benchmark,
         warnings=["基准数据使用 AkShare 主源。"],
+        engine_events={
+            "totalEvents": 2,
+            "warningCount": 1,
+            "errorCount": 0,
+            "byType": {"progress": 1, "finished": 1},
+            "recentTypes": ["progress", "finished"],
+            "recentEvents": [],
+        },
     )
 
     assert payload["tradeStats"]["endingEquity"] == 112000.0
@@ -148,3 +172,15 @@ def test_serialize_symbol_result_adds_assumptions_insights_and_derived_trade_sta
         for item in payload["insights"]
     )
     assert payload["trades"][1]["tax"] == pytest.approx(112.0)
+    assert payload["dataQuality"]["selectedSource"] == "akshare"
+    assert payload["dataQuality"]["sourceOrder"] == [
+        "akshare",
+        "tickflow",
+        "tushare",
+        "sina_direct",
+    ]
+    assert payload["executionQuality"]["volumeLimitPct"] == 0.2
+    assert payload["executionQuality"]["filledOrderCount"] == 2
+    assert payload["riskDiagnostics"]["maxDrawdownLimit"] == 0.12
+    assert payload["riskDiagnostics"]["riskCooldownBars"] == 3
+    assert payload["engineEvents"]["warningCount"] == 1

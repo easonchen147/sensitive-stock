@@ -58,14 +58,14 @@ reference = "tencent"
 
 [[package]]
 name = "akshare"
-version = "1.18.49"
+version = "1.18.63"
 description = "AKShare is an elegant and simple financial data interface library for Python, built for human beings!"
 optional = false
 python-versions = ">=3.9"
 groups = ["main"]
 files = [
-    {file = "akshare-1.18.49-py3-none-any.whl", hash = "sha256:0e8b503fddbcdb906493ab0f8b6e564ea4ec5b438ebc5c9c1619cf3d9afb02c7"},
-    {file = "akshare-1.18.49.tar.gz", hash = "sha256:7d3ec53d06cb022f5f4ea5e6ecd4c9a12bbf595fe03045e65b7d98dcd1173db1"},
+    {file = "akshare-1.18.63-py3-none-any.whl", hash = "sha256:1e0c271d0c2aabc91a592b6aad5791c160de3674cf01d025c0b7cbdbcab41f3a"},
+    {file = "akshare-1.18.63.tar.gz", hash = "sha256:dc8bfb90f9c0818589f7cc377406f84877b4aabc02d138363c0dc962971a93ff"},
 ]
 
 [package.dependencies]
@@ -107,6 +107,30 @@ files = [
     {file = "annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"},
     {file = "annotated_types-0.7.0.tar.gz", hash = "sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89"},
 ]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
+name = "anyio"
+version = "4.13.0"
+description = "High-level concurrency and networking framework on top of asyncio or Trio"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "anyio-4.13.0-py3-none-any.whl", hash = "sha256:08b310f9e24a9594186fd75b4f73f4a4152069e3853f1ed8bfbf58369f4ad708"},
+    {file = "anyio-4.13.0.tar.gz", hash = "sha256:334b70e641fd2221c1505b3890c69882fe4a2df910cba14d97019b90b24439dc"},
+]
+
+[package.dependencies]
+idna = ">=2.8"
+typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
+
+[package.extras]
+trio = ["trio (>=0.32.0)"]
 
 [package.source]
 type = "legacy"
@@ -591,6 +615,23 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
+name = "h11"
+version = "0.16.0"
+description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"},
+    {file = "h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"},
+]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
 name = "html5lib"
 version = "1.1"
 description = "HTML parser based on the WHATWG HTML specification"
@@ -611,6 +652,63 @@ all = ["chardet (>=2.2)", "genshi", "lxml ; platform_python_implementation == \"
 chardet = ["chardet (>=2.2)"]
 genshi = ["genshi"]
 lxml = ["lxml ; platform_python_implementation == \"CPython\""]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
+name = "httpcore"
+version = "1.0.9"
+description = "A minimal low-level HTTP client."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "httpcore-1.0.9-py3-none-any.whl", hash = "sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"},
+    {file = "httpcore-1.0.9.tar.gz", hash = "sha256:6e34463af53fd2ab5d807f399a9b45ea31c3dfa2276f15a2c3f00afff6e176e8"},
+]
+
+[package.dependencies]
+certifi = "*"
+h11 = ">=0.16"
+
+[package.extras]
+asyncio = ["anyio (>=4.0,<5.0)"]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (==1.*)"]
+trio = ["trio (>=0.22.0,<1.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
+name = "httpx"
+version = "0.28.1"
+description = "The next generation HTTP client."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"},
+    {file = "httpx-0.28.1.tar.gz", hash = "sha256:75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc"},
+]
+
+[package.dependencies]
+anyio = "*"
+certifi = "*"
+httpcore = "==1.*"
+idna = "*"
+
+[package.extras]
+brotli = ["brotli ; platform_python_implementation == \"CPython\"", "brotlicffi ; platform_python_implementation != \"CPython\""]
+cli = ["click (==8.*)", "pygments (==2.*)", "rich (>=10,<14)"]
+http2 = ["h2 (>=3,<5)"]
+socks = ["socksio (==1.*)"]
+zstd = ["zstandard (>=0.18.0)"]
 
 [package.source]
 type = "legacy"
@@ -1887,6 +1985,33 @@ url = "https://mirrors.cloud.tencent.com/pypi/simple"
 reference = "tencent"
 
 [[package]]
+name = "tickflow"
+version = "0.1.21"
+description = "TickFlow Python Client"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "tickflow-0.1.21-py3-none-any.whl", hash = "sha256:eba424d341b6ed7ba0c2ccd13e18e6d535513349b31ed9adcc5dd02c599980a4"},
+    {file = "tickflow-0.1.21.tar.gz", hash = "sha256:17fcff4fa3d38805923d92e4861c0bb592a89c6e8a08187533fad2853dc50364"},
+]
+
+[package.dependencies]
+httpx = ">=0.25.0"
+typing-extensions = ">=4.0.0"
+
+[package.extras]
+all = ["pandas (>=1.5.0)", "tqdm (>=4.60.0)", "websockets (>=13.0)"]
+pandas = ["pandas (>=1.5.0)"]
+progress = ["tqdm (>=4.60.0)"]
+realtime = ["websockets (>=13.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://mirrors.cloud.tencent.com/pypi/simple"
+reference = "tencent"
+
+[[package]]
 name = "tqdm"
 version = "4.67.3"
 description = "Fast, Extensible Progress Meter"
@@ -2055,4 +2180,4 @@ reference = "tencent"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "38c330860066cab3d3c4cb393b8f61d84d3d0f041e0b49e20b173d18b0dce5d6"
+content-hash = "8efd36f4e3b355cb1437543f47ca32e3714a894e89a13e5915bfd78741b53467"

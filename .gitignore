@@ -114,6 +114,8 @@ frontend/.vercel/
 frontend/.turbo/
 frontend/.eslintcache
 frontend/*.tsbuildinfo
+!frontend/lib/
+!frontend/lib/**
 
 # Local browser verification artifacts
 .playwright-mcp/

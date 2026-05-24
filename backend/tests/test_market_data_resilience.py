@@ -83,6 +83,29 @@ def _eastmoney_sector_response() -> FakeResponse:
     )
 
 
+class FakeTickflowQuotes:
+    def get(self, *args, **kwargs):  # noqa: ANN002, ANN003, ANN201
+        assert kwargs["symbols"] == ["000001.SZ"]
+        return [
+            {
+                "symbol": "000001.SZ",
+                "name": "平安银行",
+                "last_price": 10.8,
+                "prev_close": 10.0,
+                "open": 10.1,
+                "high": 10.9,
+                "low": 9.9,
+                "volume": 1000,
+                "amount": 10800,
+                "ext": {"change_pct": 0.08, "change_amount": 0.8},
+            }
+        ]
+
+
+class FakeTickflowClient:
+    quotes = FakeTickflowQuotes()
+
+
 def test_market_quote_success_marks_payload_as_not_degraded() -> None:
     service = AkshareMarketDataService(
         akshare_client=EmptyAkshareClient(),
@@ -109,6 +132,23 @@ def test_market_quote_fallback_marks_payload_as_degraded() -> None:
     assert payload["degraded"] is True
     assert "主行情报价源暂不可用" in payload["warnings"][0]
     assert payload["items"][0]["symbol"] == "000001"
+
+
+def test_market_quote_tickflow_fallback_uses_api_key_source() -> None:
+    service = AkshareMarketDataService(
+        akshare_client=FailingAkshareClient(),
+        tickflow_client_factory=lambda: FakeTickflowClient(),
+        session=SequencedSession([]),
+        retry_attempts=1,
+    )
+
+    payload = service.get_quotes(["000001"])
+
+    assert payload["source"] == "tickflow"
+    assert payload["degraded"] is True
+    assert "TickFlow" in payload["warnings"][0]
+    assert payload["items"][0]["symbol"] == "000001"
+    assert payload["items"][0]["changePercent"] == 8.0
 
 
 def test_market_quote_refresh_failure_returns_cached_degraded_payload() -> None:

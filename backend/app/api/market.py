@@ -27,7 +27,14 @@ blueprint = Blueprint("market", __name__)
 
 def _get_market_data_service():
     factory = current_app.config.get("MARKET_DATA_SERVICE_FACTORY") or AkshareMarketDataService
-    return factory() if callable(factory) else factory
+    if factory is not AkshareMarketDataService:
+        return factory() if callable(factory) else factory
+    return AkshareMarketDataService(
+        timeout=current_app.config["HTTP_TIMEOUT"],
+        tickflow_api_key=current_app.config["TICKFLOW_API_KEY"],
+        tickflow_base_url=current_app.config["TICKFLOW_BASE_URL"],
+        tickflow_timeout=current_app.config["TICKFLOW_TIMEOUT"],
+    )
 
 
 def _get_news_intelligence_service():

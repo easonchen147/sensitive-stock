@@ -11,7 +11,7 @@ OpenSpec change control, and project documentation.
 │   │   ├── schemas/         # Pydantic request schemas
 │   │   ├── services/        # Backend service layer and compatibility adapters
 │   │   └── openapi.py       # Global OpenAPI emitter
-│   ├── backtesting/         # Compatibility support for AKQuant-backed execution
+│   ├── backtesting/         # AKQuant signal support and shared market-data providers
 │   ├── scripts/
 │   │   └── generate_openapi.py
 │   ├── tests/
@@ -44,6 +44,8 @@ Backend public API facts:
   bearer-token authentication.
 - Screener, diagnosis, factors, and portfolio are formal API/workbench surfaces,
   not transitional route markers.
+- Market data uses an AkShare-first provider chain with optional TickFlow,
+  optional Tushare, and Sina direct as last resort.
 
 Frontend contract and design facts:
 

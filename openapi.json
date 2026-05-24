@@ -3225,7 +3225,11 @@
           "metrics",
           "series",
           "tradeStats",
-          "trades"
+          "trades",
+          "dataQuality",
+          "executionQuality",
+          "riskDiagnostics",
+          "engineEvents"
         ],
         "properties": {
           "symbol": {
@@ -3277,6 +3281,22 @@
               "type": "object",
               "additionalProperties": true
             }
+          },
+          "dataQuality": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "executionQuality": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "riskDiagnostics": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "engineEvents": {
+            "type": "object",
+            "additionalProperties": true
           }
         },
         "additionalProperties": true
@@ -3664,6 +3684,18 @@
             "minimum": 0,
             "title": "Slippage",
             "type": "number"
+          },
+          "minCommission": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Mincommission",
+            "type": "number"
+          },
+          "transferFeeRate": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Transferfeerate",
+            "type": "number"
           }
         },
         "title": "BacktestCostRequest",
@@ -3692,6 +3724,13 @@
             "minimum": 1,
             "title": "Lotsize",
             "type": "integer"
+          },
+          "volumeLimitPct": {
+            "default": 0.25,
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Volumelimitpct",
+            "type": "number"
           }
         },
         "title": "BacktestExecutionRequest",
@@ -3762,6 +3801,35 @@
             "minimum": 0,
             "title": "Takeprofit",
             "type": "number"
+          },
+          "maxDrawdown": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Maxdrawdown",
+            "type": "number"
+          },
+          "maxDailyLoss": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Maxdailyloss",
+            "type": "number"
+          },
+          "maxPositionSize": {
+            "default": 0.0,
+            "minimum": 0,
+            "title": "Maxpositionsize",
+            "type": "number"
+          },
+          "reduceOnlyAfterRisk": {
+            "default": false,
+            "title": "Reduceonlyafterrisk",
+            "type": "boolean"
+          },
+          "riskCooldownBars": {
+            "default": 0,
+            "minimum": 0,
+            "title": "Riskcooldownbars",
+            "type": "integer"
           }
         },
         "title": "BacktestRiskRequest",

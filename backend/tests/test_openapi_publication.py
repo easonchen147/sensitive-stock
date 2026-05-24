@@ -103,6 +103,19 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
 
     backtest_request = schemas["BacktestRunRequest"]
     assert set(backtest_request["required"]) == {"market", "strategy"}
+    backtest_execution = schemas["BacktestExecutionRequest"]
+    assert "volumeLimitPct" in backtest_execution["properties"]
+    backtest_costs = schemas["BacktestCostRequest"]
+    assert "minCommission" in backtest_costs["properties"]
+    assert "transferFeeRate" in backtest_costs["properties"]
+    backtest_risk = schemas["BacktestRiskRequest"]
+    assert "maxDrawdown" in backtest_risk["properties"]
+    assert "reduceOnlyAfterRisk" in backtest_risk["properties"]
+    backtest_result = schemas["BacktestSymbolResult"]
+    assert "dataQuality" in backtest_result["required"]
+    assert "executionQuality" in backtest_result["required"]
+    assert "riskDiagnostics" in backtest_result["required"]
+    assert "engineEvents" in backtest_result["required"]
     assert (
         document["paths"]["/api/v1/backtests/run"]["post"]["requestBody"]["content"][
             "application/json"

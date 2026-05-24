@@ -17,6 +17,7 @@ from backtesting.strategy import StrategyExecutor
 
 DEFAULT_TIMEZONE = "Asia/Shanghai"
 DEFAULT_ENGINE_NAME = "akquant"
+SIGNAL_REPLAY_STRATEGY_ID = "signal_replay"
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
@@ -76,6 +77,11 @@ def _build_execution_metadata() -> dict[str, Any]:
             },
         ],
         "supportsRiskControls": True,
+        "supportsVolumeLimit": True,
+        "supportsMinCommission": True,
+        "supportsTransferFee": True,
+        "strategyRiskId": SIGNAL_REPLAY_STRATEGY_ID,
+        "supportedSlippageTypes": ["zero", "percent", "fixed", "ticks"],
     }
 
 
@@ -126,6 +132,56 @@ def _metric_value(result: Any, name: str, default: float = 0.0) -> float:
         return _safe_float(getattr(metrics, name), default)
 
     return default
+
+
+def _metric_percent_decimal(result: Any, name: str, default: float = 0.0) -> float:
+    value = _metric_value(result, name, default)
+    if abs(value) > 1:
+        return value / 100.0
+    return value
+
+
+@dataclass
+class EngineEventCollector:
+    total: int = 0
+    warning_count: int = 0
+    error_count: int = 0
+    by_type: dict[str, int] = field(default_factory=dict)
+    recent_events: list[dict[str, Any]] = field(default_factory=list)
+
+    def __call__(self, event: Any) -> None:
+        if not isinstance(event, dict):
+            return
+        event_type = str(event.get("event_type") or "unknown")
+        level = str(event.get("level") or "").lower()
+        payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+
+        self.total += 1
+        self.by_type[event_type] = self.by_type.get(event_type, 0) + 1
+        if level in {"warning", "warn"}:
+            self.warning_count += 1
+        if level in {"error", "critical"}:
+            self.error_count += 1
+
+        self.recent_events.append(
+            {
+                "type": event_type,
+                "level": level or "info",
+                "symbol": event.get("symbol"),
+                "message": payload.get("message") or payload.get("reason") or "",
+            }
+        )
+        self.recent_events = self.recent_events[-8:]
+
+    def summary(self) -> dict[str, Any]:
+        return {
+            "totalEvents": self.total,
+            "warningCount": self.warning_count,
+            "errorCount": self.error_count,
+            "byType": dict(sorted(self.by_type.items())),
+            "recentTypes": [item["type"] for item in self.recent_events],
+            "recentEvents": list(self.recent_events),
+        }
 
 
 def _series_rows(series: pd.Series) -> list[dict[str, Any]]:
@@ -226,6 +282,16 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
         if stop_loss > 0 or take_profit > 0
         else "止损 关闭 / 止盈 关闭"
     )
+    max_drawdown = float(settings.get("maxDrawdown") or 0.0)
+    max_daily_loss = float(settings.get("maxDailyLoss") or 0.0)
+    max_position_size = float(settings.get("maxPositionSize") or 0.0)
+    advanced_risk_parts = []
+    if max_drawdown > 0:
+        advanced_risk_parts.append(f"最大回撤阈值 {max_drawdown * 100:.1f}%")
+    if max_daily_loss > 0:
+        advanced_risk_parts.append(f"日亏损阈值 {max_daily_loss:.0f}")
+    if max_position_size > 0:
+        advanced_risk_parts.append(f"最大持仓 {max_position_size:.0f} 股")
     price_basis = "开盘价" if fill_policy.get("priceBasis", "close") == "open" else "收盘价"
     temporal = fill_policy.get("temporal", "same_cycle")
     temporal_label = "同周期" if temporal == "same_cycle" else str(temporal)
@@ -268,9 +334,13 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
             "value": (
                 f"佣金 {float(settings.get('tradingFee') or 0.0) * 100:.2f}% / "
                 f"印花税 {float(settings.get('stampTax') or 0.0) * 100:.2f}% / "
-                f"滑点 {float(settings.get('slippage') or 0.0) * 100:.2f}%"
+                f"滑点 {float(settings.get('slippage') or 0.0) * 100:.2f}% / "
+                f"最低佣金 {float(settings.get('minCommission') or 0.0):.2f}"
             ),
-            "detail": "费用通过佣金、税费与滑点参数生效，卖出税费会体现在成交成本里。",
+            "detail": (
+                "费用通过佣金、最低佣金、过户费、税费与滑点参数生效，"
+                "卖出税费会体现在成交成本里。"
+            ),
         },
         {
             "label": "风险控制",
@@ -278,6 +348,12 @@ def _build_assumptions(settings: dict[str, Any]) -> list[dict[str, str]]:
             "detail": (
                 "止损止盈通过保护性卖单建模。若保护单仍在场，信号平仓会先撤保护单，"
                 "再在下一可成交周期离场。"
+                + (
+                    " AKQuant 策略级风控同时启用："
+                    + " / ".join(advanced_risk_parts)
+                    if advanced_risk_parts
+                    else ""
+                )
             ),
         },
     ]
@@ -404,6 +480,7 @@ def serialize_symbol_result(
     benchmark: pd.DataFrame | None = None,
     warnings: list[str] | None = None,
     protective_levels: dict[str, list[dict[str, Any]]] | None = None,
+    engine_events: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     normalized_warnings = list(warnings or [])
     equity_curve = getattr(result, "equity_curve_daily", pd.Series(dtype=float)).copy()
@@ -448,6 +525,13 @@ def serialize_symbol_result(
         "win_rate": _metric_value(result, "win_rate") / 100.0,
         "trading_days": float(len(equity_curve)),
         "profit_factor": _metric_value(result, "profit_factor"),
+        "sortino": _metric_value(result, "sortino_ratio"),
+        "calmar": _metric_value(result, "calmar_ratio"),
+        "var_95": _metric_percent_decimal(result, "var_95"),
+        "cvar_95": _metric_percent_decimal(result, "cvar_95"),
+        "ulcer_index": _metric_value(result, "ulcer_index"),
+        "sqn": _metric_value(result, "sqn"),
+        "kelly_criterion": _metric_value(result, "kelly_criterion"),
     }
 
     orders_df = getattr(result, "orders_df", pd.DataFrame())
@@ -458,6 +542,8 @@ def serialize_symbol_result(
         trades_df = pd.DataFrame()
 
     if not orders_df.empty:
+        if "status" not in orders_df.columns:
+            orders_df["status"] = ""
         rejected = orders_df[orders_df["status"].astype(str).str.lower() == "rejected"]
         for _, row in rejected.head(3).iterrows():
             reason = str(row.get("reject_reason") or "未知原因")
@@ -525,6 +611,67 @@ def serialize_symbol_result(
     if not trade_records:
         normalized_warnings.append("本次回测未产生成交记录。")
 
+    filled_order_count = int(
+        (orders_df["status"].astype(str).str.lower() == "filled").sum()
+        if not orders_df.empty and "status" in orders_df.columns
+        else len(trade_records)
+    )
+    rejected_order_count = int(
+        (orders_df["status"].astype(str).str.lower() == "rejected").sum()
+        if not orders_df.empty and "status" in orders_df.columns
+        else 0
+    )
+    volume_limit_pct = float(settings.get("volumeLimitPct") or 0.0)
+    capacity_warnings = []
+    if volume_limit_pct > 0 and volume_limit_pct < 0.05:
+        capacity_warnings.append("成交量限制低于 5%，策略容量可能明显受限。")
+    if rejected_order_count:
+        capacity_warnings.append(
+            f"存在 {rejected_order_count} 笔拒单，需复核资金、持仓或风控约束。"
+        )
+
+    source_order = list(settings.get("sourceOrder") or [])
+    if not source_order:
+        primary_source = settings.get("primarySource")
+        fallback_sources = list(settings.get("fallbackSources") or [])
+        source_order = [primary_source, *fallback_sources] if primary_source else []
+
+    data_quality = {
+        "sourceOrder": source_order,
+        "primarySource": settings.get("primarySource"),
+        "fallbackSources": list(settings.get("fallbackSources") or []),
+        "selectedSource": settings.get("lastSuccessSource") or settings.get("primarySource"),
+        "providerErrors": list(settings.get("providerErrors") or []),
+        "skippedProviders": list(settings.get("skippedProviders") or []),
+        "rowCount": int(settings.get("dataRows") or len(equity_curve)),
+        "tradingDays": int(len(equity_curve)),
+        "startDate": settings.get("dataStartDate"),
+        "endDate": settings.get("dataEndDate"),
+    }
+    execution_quality = {
+        "volumeLimitPct": volume_limit_pct,
+        "minCommission": float(settings.get("minCommission") or 0.0),
+        "transferFeeRate": float(settings.get("transferFeeRate") or 0.0),
+        "filledOrderCount": filled_order_count,
+        "rejectedOrderCount": rejected_order_count,
+        "turnover": turnover,
+        "exposureRate": exposure_rate,
+        "capacityWarnings": capacity_warnings,
+    }
+    risk_diagnostics = {
+        "stopLoss": float(settings.get("stopLoss") or 0.0),
+        "takeProfit": float(settings.get("takeProfit") or 0.0),
+        "maxDrawdownLimit": float(settings.get("maxDrawdown") or 0.0),
+        "maxDailyLoss": float(settings.get("maxDailyLoss") or 0.0),
+        "maxPositionSize": float(settings.get("maxPositionSize") or 0.0),
+        "reduceOnlyAfterRisk": bool(settings.get("reduceOnlyAfterRisk") or False),
+        "riskCooldownBars": int(settings.get("riskCooldownBars") or 0),
+        "realizedMaxDrawdown": metrics["max_drawdown"],
+        "var95": metrics["var_95"],
+        "cvar95": metrics["cvar_95"],
+        "riskWarnings": capacity_warnings,
+    }
+
     assumptions = _build_assumptions(settings)
     insights = _build_insights(
         metrics=metrics,
@@ -551,6 +698,18 @@ def serialize_symbol_result(
         "warnings": normalized_warnings,
         "assumptions": assumptions,
         "insights": insights,
+        "dataQuality": data_quality,
+        "executionQuality": execution_quality,
+        "riskDiagnostics": risk_diagnostics,
+        "engineEvents": engine_events
+        or {
+            "totalEvents": 0,
+            "warningCount": 0,
+            "errorCount": 0,
+            "byType": {},
+            "recentTypes": [],
+            "recentEvents": [],
+        },
     }
 
 
@@ -799,6 +958,9 @@ class AKQuantBacktestService:
                 adjust=request.adjust,
             )
         )
+        source_details = (
+            provider.describe_sources() if hasattr(provider, "describe_sources") else {}
+        )
         benchmark = self._load_benchmark(provider=provider, request=request, warnings=warnings)
         signal = self.strategy_executor.execute(resolved_code, data, request.params)
         signal_lookup = _build_signal_lookup(signal)
@@ -821,6 +983,8 @@ class AKQuantBacktestService:
             stop_loss=request.stop_loss,
             take_profit=request.take_profit,
         )
+        engine_event_collector = EngineEventCollector()
+        strategy_risk_kwargs = self._build_strategy_risk_kwargs(request)
         runtime_result = self.runtime_runner(
             data=_build_akquant_frame(symbol, data),
             strategy=strategy,
@@ -828,14 +992,17 @@ class AKQuantBacktestService:
             initial_cash=request.initial_capital,
             commission_rate=request.trading_fee,
             stamp_tax_rate=request.stamp_tax,
+            transfer_fee_rate=request.transfer_fee_rate,
+            min_commission=request.min_commission,
             slippage=_build_slippage_policy(request.slippage),
+            volume_limit_pct=request.volume_limit_pct,
             lot_size=request.lot_size,
             fill_policy=fill_policy,
             t_plus_one=True,
             show_progress=False,
-        )
-        source_details = (
-            provider.describe_sources() if hasattr(provider, "describe_sources") else {}
+            strategy_id=SIGNAL_REPLAY_STRATEGY_ID,
+            on_event=engine_event_collector,
+            **strategy_risk_kwargs,
         )
         settings = {
             "symbol": symbol,
@@ -848,18 +1015,34 @@ class AKQuantBacktestService:
             "executionMode": request.execution_mode,
             "positionSize": request.position_size,
             "lotSize": request.lot_size,
+            "volumeLimitPct": request.volume_limit_pct,
             "tradingFee": request.trading_fee,
             "stampTax": request.stamp_tax,
             "slippage": request.slippage,
+            "minCommission": request.min_commission,
+            "transferFeeRate": request.transfer_fee_rate,
             "stopLoss": request.stop_loss,
             "takeProfit": request.take_profit,
+            "maxDrawdown": request.max_drawdown,
+            "maxDailyLoss": request.max_daily_loss,
+            "maxPositionSize": request.max_position_size,
+            "reduceOnlyAfterRisk": request.reduce_only_after_risk,
+            "riskCooldownBars": request.risk_cooldown_bars,
             "engine": DEFAULT_ENGINE_NAME,
             "engineVersion": akquant.__version__,
+            "strategyRiskId": SIGNAL_REPLAY_STRATEGY_ID,
             "fillPolicy": {
                 "priceBasis": fill_policy["price_basis"],
                 "barOffset": fill_policy["bar_offset"],
                 "temporal": fill_policy["temporal"],
             },
+            "dataRows": len(data),
+            "dataStartDate": (
+                pd.Timestamp(data.index.min()).strftime("%Y-%m-%d") if not data.empty else None
+            ),
+            "dataEndDate": (
+                pd.Timestamp(data.index.max()).strftime("%Y-%m-%d") if not data.empty else None
+            ),
             **source_details,
         }
         return serialize_symbol_result(
@@ -869,7 +1052,23 @@ class AKQuantBacktestService:
             benchmark=benchmark,
             warnings=warnings,
             protective_levels=strategy.closed_protective_levels,
+            engine_events=engine_event_collector.summary(),
         )
+
+    def _build_strategy_risk_kwargs(self, request: Any) -> dict[str, Any]:
+        strategy_id = SIGNAL_REPLAY_STRATEGY_ID
+        kwargs: dict[str, Any] = {}
+        if request.max_daily_loss > 0:
+            kwargs["strategy_max_daily_loss"] = {strategy_id: request.max_daily_loss}
+        if request.max_drawdown > 0:
+            kwargs["strategy_max_drawdown"] = {strategy_id: request.max_drawdown}
+        if request.max_position_size > 0:
+            kwargs["strategy_max_position_size"] = {strategy_id: request.max_position_size}
+        if request.reduce_only_after_risk:
+            kwargs["strategy_reduce_only_after_risk"] = {strategy_id: True}
+        if request.risk_cooldown_bars > 0:
+            kwargs["strategy_risk_cooldown_bars"] = {strategy_id: request.risk_cooldown_bars}
+        return kwargs
 
     def _load_benchmark(
         self,

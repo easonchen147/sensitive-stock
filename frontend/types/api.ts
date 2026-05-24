@@ -85,6 +85,53 @@ export type BacktestTradeStats = {
   exposureRate?: number;
 };
 
+export type BacktestDataQuality = {
+  sourceOrder?: string[];
+  primarySource?: string | null;
+  fallbackSources?: string[];
+  selectedSource?: string | null;
+  providerErrors?: string[];
+  skippedProviders?: string[];
+  rowCount?: number;
+  tradingDays?: number;
+  startDate?: string | null;
+  endDate?: string | null;
+};
+
+export type BacktestExecutionQuality = {
+  volumeLimitPct?: number;
+  minCommission?: number;
+  transferFeeRate?: number;
+  filledOrderCount?: number;
+  rejectedOrderCount?: number;
+  turnover?: number;
+  exposureRate?: number;
+  capacityWarnings?: string[];
+};
+
+export type BacktestRiskDiagnostics = {
+  stopLoss?: number;
+  takeProfit?: number;
+  maxDrawdownLimit?: number;
+  maxDailyLoss?: number;
+  maxPositionSize?: number;
+  reduceOnlyAfterRisk?: boolean;
+  riskCooldownBars?: number;
+  realizedMaxDrawdown?: number;
+  var95?: number;
+  cvar95?: number;
+  riskWarnings?: string[];
+};
+
+export type BacktestEngineEvents = {
+  totalEvents: number;
+  warningCount: number;
+  errorCount: number;
+  byType: Record<string, number>;
+  recentTypes: string[];
+  recentEvents?: Array<Record<string, unknown>>;
+};
+
 export type BacktestAssumption = {
   label: string;
   value: string;
@@ -107,17 +154,32 @@ export type BacktestSettings = {
   executionMode: ExecutionMode;
   positionSize: number;
   lotSize: number;
+  volumeLimitPct?: number;
   tradingFee: number;
   stampTax: number;
   slippage: number;
+  minCommission?: number;
+  transferFeeRate?: number;
   stopLoss: number;
   takeProfit: number;
+  maxDrawdown?: number;
+  maxDailyLoss?: number;
+  maxPositionSize?: number;
+  reduceOnlyAfterRisk?: boolean;
+  riskCooldownBars?: number;
   initialCapital?: number;
   engine?: "akquant";
   engineVersion?: string;
   fillPolicy?: BacktestFillPolicy;
   primarySource?: string;
   fallbackSources?: string[];
+  sourceOrder?: string[];
+  lastSuccessSource?: string | null;
+  providerErrors?: string[];
+  skippedProviders?: string[];
+  dataRows?: number;
+  dataStartDate?: string | null;
+  dataEndDate?: string | null;
 };
 
 export type BacktestSeries = {
@@ -140,6 +202,10 @@ export type BacktestSymbolResult = {
   warnings: string[];
   assumptions: BacktestAssumption[];
   insights: BacktestInsight[];
+  dataQuality: BacktestDataQuality;
+  executionQuality: BacktestExecutionQuality;
+  riskDiagnostics: BacktestRiskDiagnostics;
+  engineEvents: BacktestEngineEvents;
 };
 
 export type BacktestFailure = {
@@ -166,17 +232,25 @@ export type BacktestExecutionPayload = {
   mode: ExecutionMode;
   positionSize: number;
   lotSize: number;
+  volumeLimitPct: number;
 };
 
 export type BacktestCostPayload = {
   tradingFee: number;
   stampTax: number;
   slippage: number;
+  minCommission: number;
+  transferFeeRate: number;
 };
 
 export type BacktestRiskPayload = {
   stopLoss: number;
   takeProfit: number;
+  maxDrawdown: number;
+  maxDailyLoss: number;
+  maxPositionSize: number;
+  reduceOnlyAfterRisk: boolean;
+  riskCooldownBars: number;
 };
 
 export type BacktestRunPayload = {
@@ -213,6 +287,11 @@ export type BacktestPresetExecutionMetadata = {
   supportedModes: ExecutionMode[];
   fillPolicies: Array<BacktestFillPolicy & { mode: ExecutionMode }>;
   supportsRiskControls: boolean;
+  supportsVolumeLimit?: boolean;
+  supportsMinCommission?: boolean;
+  supportsTransferFee?: boolean;
+  strategyRiskId?: string;
+  supportedSlippageTypes?: string[];
 };
 
 export type BacktestPreset = {
@@ -235,6 +314,11 @@ export type BacktestPresetsResponse = {
 export type MarketOverview = {
   primarySource?: string;
   fallbackSources?: string[];
+  sourceOrder?: string[];
+  lastSuccessSource?: string | null;
+  providerErrors?: string[];
+  skippedProviders?: string[];
+  providerCapabilities?: Record<string, string[]>;
   routes: Record<string, string>;
 };
 

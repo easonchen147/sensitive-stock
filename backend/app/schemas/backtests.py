@@ -57,6 +57,7 @@ class BacktestExecutionRequest(BaseModel):
     mode: Literal["close", "next_open"] = "close"
     position_size: float = Field(default=1.0, alias="positionSize", gt=0, le=1)
     lot_size: int = Field(default=100, alias="lotSize", ge=1)
+    volume_limit_pct: float = Field(default=0.25, alias="volumeLimitPct", ge=0, le=1)
 
 
 class BacktestCostRequest(BaseModel):
@@ -65,6 +66,8 @@ class BacktestCostRequest(BaseModel):
     trading_fee: float = Field(default=0.0005, alias="tradingFee", ge=0)
     stamp_tax: float = Field(default=0.001, alias="stampTax", ge=0)
     slippage: float = Field(default=0.0, ge=0)
+    min_commission: float = Field(default=0.0, alias="minCommission", ge=0)
+    transfer_fee_rate: float = Field(default=0.0, alias="transferFeeRate", ge=0)
 
 
 class BacktestRiskRequest(BaseModel):
@@ -72,6 +75,11 @@ class BacktestRiskRequest(BaseModel):
 
     stop_loss: float = Field(default=0.0, alias="stopLoss", ge=0)
     take_profit: float = Field(default=0.0, alias="takeProfit", ge=0)
+    max_drawdown: float = Field(default=0.0, alias="maxDrawdown", ge=0)
+    max_daily_loss: float = Field(default=0.0, alias="maxDailyLoss", ge=0)
+    max_position_size: float = Field(default=0.0, alias="maxPositionSize", ge=0)
+    reduce_only_after_risk: bool = Field(default=False, alias="reduceOnlyAfterRisk")
+    risk_cooldown_bars: int = Field(default=0, alias="riskCooldownBars", ge=0)
 
 
 class BacktestRunRequest(BaseModel):
@@ -110,15 +118,23 @@ class BacktestRunRequest(BaseModel):
                 "mode": payload.get("executionMode", "close"),
                 "positionSize": payload.get("positionSize", 1.0),
                 "lotSize": payload.get("lotSize", 100),
+                "volumeLimitPct": payload.get("volumeLimitPct", 0.25),
             },
             "costs": {
                 "tradingFee": payload.get("tradingFee", 0.0005),
                 "stampTax": payload.get("stampTax", 0.001),
                 "slippage": payload.get("slippage", 0.0),
+                "minCommission": payload.get("minCommission", 0.0),
+                "transferFeeRate": payload.get("transferFeeRate", 0.0),
             },
             "risk": {
                 "stopLoss": payload.get("stopLoss", 0.0),
                 "takeProfit": payload.get("takeProfit", 0.0),
+                "maxDrawdown": payload.get("maxDrawdown", 0.0),
+                "maxDailyLoss": payload.get("maxDailyLoss", 0.0),
+                "maxPositionSize": payload.get("maxPositionSize", 0.0),
+                "reduceOnlyAfterRisk": payload.get("reduceOnlyAfterRisk", False),
+                "riskCooldownBars": payload.get("riskCooldownBars", 0),
             },
             "initialCapital": payload.get("initialCapital", 100000.0),
         }
@@ -178,6 +194,10 @@ class BacktestRunRequest(BaseModel):
         return self.execution.lot_size
 
     @property
+    def volume_limit_pct(self) -> float:
+        return self.execution.volume_limit_pct
+
+    @property
     def trading_fee(self) -> float:
         return self.costs.trading_fee
 
@@ -190,9 +210,37 @@ class BacktestRunRequest(BaseModel):
         return self.costs.slippage
 
     @property
+    def min_commission(self) -> float:
+        return self.costs.min_commission
+
+    @property
+    def transfer_fee_rate(self) -> float:
+        return self.costs.transfer_fee_rate
+
+    @property
     def stop_loss(self) -> float:
         return self.risk.stop_loss
 
     @property
     def take_profit(self) -> float:
         return self.risk.take_profit
+
+    @property
+    def max_drawdown(self) -> float:
+        return self.risk.max_drawdown
+
+    @property
+    def max_daily_loss(self) -> float:
+        return self.risk.max_daily_loss
+
+    @property
+    def max_position_size(self) -> float:
+        return self.risk.max_position_size
+
+    @property
+    def reduce_only_after_risk(self) -> bool:
+        return self.risk.reduce_only_after_risk
+
+    @property
+    def risk_cooldown_bars(self) -> int:
+        return self.risk.risk_cooldown_bars
