@@ -105,3 +105,4 @@ def test_news_intelligence_preserves_cached_degraded_metadata() -> None:
     assert payload["warnings"]
     assert payload["keywords"][0]["keyword"] == "computing"
     assert payload["sectorHints"] == []
+    assert payload["eventHints"] == []

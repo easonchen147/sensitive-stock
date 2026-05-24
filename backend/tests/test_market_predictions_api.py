@@ -88,6 +88,19 @@ class StubNewsPredictionService:
                     "matchedKeywords": ["AI"],
                 }
             ],
+            "eventHints": [
+                {
+                    "eventType": "order_win",
+                    "label": "中标与订单",
+                    "signal": "bullish",
+                    "score": 5,
+                    "count": 1,
+                    "relatedSymbols": ["000001"],
+                    "relatedNames": ["平安银行"],
+                    "sourceIds": ["news-1"],
+                    "matchedTitles": ["AI infrastructure demand expands"],
+                }
+            ],
             "predictionMetadata": {
                 "provider": "local_heuristic",
                 "model": "keyword-sector-rules",
@@ -99,6 +112,7 @@ class StubNewsPredictionService:
                 "newsItemCount": 1,
                 "keywordCount": 1,
                 "sectorHintCount": 1,
+                "eventHintCount": 1,
                 "symbolCount": len(symbols or []),
                 "thinkingType": thinking_type or "enabled",
                 "reasoningEffort": reasoning_effort or "high",
@@ -162,6 +176,8 @@ def test_market_news_predictions_endpoint_returns_prediction_payload(tmp_path: P
     assert payload["predictions"][0]["predictionId"].startswith(payload["runId"])
     assert payload["predictionMetadata"]["provider"] == "local_heuristic"
     assert payload["predictionMetadata"]["schemaVersion"] == "market-prediction-json-v1"
+    assert payload["predictionMetadata"]["eventHintCount"] == 1
+    assert payload["eventHints"][0]["relatedSymbols"] == ["000001"]
     assert payload["predictions"][0]["target"] == "AI infrastructure"
     assert payload["backtestHandoff"]["suggestedPreset"] == "event_theme_momentum"
     assert payload["backtestHandoff"]["symbols"] == ["000001", "600000"]

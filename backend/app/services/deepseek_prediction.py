@@ -17,6 +17,7 @@ PREDICTION_SCHEMA_VERSION = "market-prediction-json-v1"
 PREDICTION_SYSTEM_PROMPT = f"""你是谨慎的 A 股市场研究助手。
 只返回严格 JSON，不给出交易指令或收益保证。
 所有 summary、riskNotes、horizon、drivers 等可读文本都必须使用简体中文。
+优先参考 eventHints 里的结构化事件信号，再结合关键词和板块提示补足判断。
 使用结构版本：{PREDICTION_SCHEMA_VERSION}。
 
 示例 JSON 输出：
@@ -71,6 +72,7 @@ class DeepSeekMarketPredictionService:
         items: list[dict[str, Any]],
         keywords: list[dict[str, Any]],
         sector_hints: list[dict[str, Any]],
+        event_hints: list[dict[str, Any]] | None = None,
         symbols: list[str] | None = None,
         thinking_type: str | None = None,
         reasoning_effort: str | None = None,
@@ -85,6 +87,7 @@ class DeepSeekMarketPredictionService:
             "items": items[:30],
             "keywords": keywords[:20],
             "sectorHints": sector_hints[:12],
+            "eventHints": (event_hints or [])[:8],
             "symbols": list(symbols or []),
         }
         metadata_base = self._build_metadata_base(context, request_mode)
@@ -200,6 +203,33 @@ class DeepSeekMarketPredictionService:
             if str(item.get("id") or "").strip()
         ]
 
+        for hint in context["eventHints"][:4]:
+            signal = _normalize_direction(hint.get("signal"))
+            score = float(hint.get("score") or 0.0)
+            related_symbols = _string_list(hint.get("relatedSymbols"))
+            related_names = _string_list(hint.get("relatedNames"))
+            target = str(hint.get("label") or "事件提示")
+            if related_symbols:
+                primary_symbol = related_symbols[0]
+                primary_name = related_names[0] if related_names else ""
+                target = " ".join(part for part in [primary_symbol, primary_name] if part)
+            confidence = max(0.3, min(0.88, 0.38 + score / 12))
+            drivers = _string_list(hint.get("matchedTitles"))[:2] or [
+                str(hint.get("label") or "事件驱动")
+            ]
+            predictions.append(
+                {
+                    "targetType": "symbol" if related_symbols else "event",
+                    "target": target,
+                    "direction": signal,
+                    "confidence": round(confidence, 2),
+                    "score": score,
+                    "horizon": "1 至 3 个交易日",
+                    "drivers": drivers[:5],
+                    "sourceIds": _string_list(hint.get("sourceIds"))[:5] or source_ids,
+                }
+            )
+
         for hint in context["sectorHints"][:5]:
             score = float(hint.get("score") or 0.0)
             confidence = max(0.25, min(0.78, 0.35 + score / 20))
@@ -250,7 +280,7 @@ class DeepSeekMarketPredictionService:
         return {
             "predictionMetadata": {
                 "provider": "local_heuristic",
-                "model": "keyword-sector-rules",
+                "model": "event-keyword-sector-rules",
                 "requestMode": "heuristic",
                 "degraded": True,
                 "cached": False,
@@ -258,9 +288,9 @@ class DeepSeekMarketPredictionService:
                 **metadata_base,
                 "warnings": warnings,
             },
-            "predictions": predictions,
+            "predictions": predictions[:8],
             "predictionSummary": (
-                "本地启发式预测由关键词频次和板块提示生成。"
+                "本地启发式预测优先使用结构化事件提示，再结合关键词频次和板块提示生成。"
             ),
             "riskNotes": self._default_risk_notes(),
         }
@@ -303,6 +333,7 @@ class DeepSeekMarketPredictionService:
             "newsItemCount": len(context["items"]),
             "keywordCount": len(context["keywords"]),
             "sectorHintCount": len(context["sectorHints"]),
+            "eventHintCount": len(context["eventHints"]),
             "symbolCount": len(context["symbols"]),
         }
 

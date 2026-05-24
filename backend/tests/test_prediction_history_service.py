@@ -23,6 +23,21 @@ def _payload() -> dict:
         "degraded": False,
         "warnings": [],
         "items": [{"id": "news-1", "title": "平安银行活跃", "content": "000001 放量。"}],
+        "keywords": [{"keyword": "放量", "count": 1, "coverage": 1}],
+        "sectorHints": [],
+        "eventHints": [
+            {
+                "eventType": "share_buyback",
+                "label": "股份回购",
+                "signal": "bullish",
+                "score": 5.2,
+                "count": 1,
+                "relatedSymbols": ["000001"],
+                "relatedNames": ["平安银行"],
+                "sourceIds": ["news-1"],
+                "matchedTitles": ["平安银行活跃"],
+            }
+        ],
         "sourceQuality": {
             "qualityScore": 88,
             "coverageScore": 90,
@@ -80,6 +95,7 @@ def test_prediction_history_stores_lists_and_reads_detail(tmp_path: Path) -> Non
     assert history["items"][0]["qualityScore"] == 88
     assert detail is not None
     assert detail["items"][0]["id"] == "news-1"
+    assert detail["eventHints"][0]["eventType"] == "share_buyback"
 
 
 def test_prediction_history_skips_corrupt_lines(tmp_path: Path) -> None:

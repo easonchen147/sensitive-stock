@@ -1,6 +1,6 @@
 # Sensitive Stock Backend
 
-`backend/` 是当前项目唯一的 Python 运行工作区，承载 Flask API、认证、行情数据、资讯预测、AKQuant 回测、诊股、因子和组合服务。
+`backend/` 是当前项目唯一的 Python 运行工作区，承载 Flask API、认证、行情数据、多源资讯聚合、结构化事件提示、DeepSeek 预测、AKQuant 回测、诊股、因子和组合服务。
 
 根目录不再承载 Python 运行时代码。新的后端模块应进入 `backend/app/`、`backend/backtesting/` 或明确的后端服务目录。
 
@@ -90,12 +90,28 @@ uv lock
 - `BACKEND_JIN10_FALLBACK_URL`
 - `BACKEND_EASTMONEY_NEWS_URL`
 - `BACKEND_SINA_FINANCE_NEWS_URL`
+- `BACKEND_CLS_TELEGRAPH_URL`
+- `BACKEND_STCN_NEWS_URL`
+- `BACKEND_21JINGJI_CAPITAL_NEWS_URL`
+- `BACKEND_CNINFO_DISCLOSURE_URL`
+- `BACKEND_CNINFO_DISCLOSURE_REFERER_URL`
+- `BACKEND_CNINFO_STATIC_BASE_URL`
 - `BACKEND_DEEPSEEK_API_KEY`
 - `BACKEND_DEEPSEEK_MODEL`
 - `BACKEND_DEEPSEEK_THINKING_TYPE`
 - `BACKEND_DEEPSEEK_REASONING_EFFORT`
 
-完整模板见 `.env.example`。
+当前默认新闻聚合会接入：
+
+```text
+金十快讯 -> 东方财富 -> 新浪财经直播 -> 财联社电报 -> 证券时报 -> 21世纪经济报道资本市场 -> 巨潮公告-深市 -> 巨潮公告-沪市 -> 巨潮公告-北交所
+```
+
+其中财联社使用页面内嵌 `__NEXT_DATA__`，证券时报和 21 财经当前使用标题级页面聚合，不抓详情页正文；巨潮公告使用官方结构化接口，不解析 PDF 正文。完整模板见 `.env.example`。
+
+新闻情报会在聚合资讯和巨潮公告上生成 `eventHints`，与 `keywords`、`sectorHints` 并列返回。当前事件规则覆盖股份回购、股东增持、股权激励、中标与订单、业绩预增、分红派息、股东减持、监管问询、立案处罚、退市风险、股东大会、董事会和停复牌等公告/资讯信号。
+
+预测接口会把 `eventHints` 传入 DeepSeek 上下文；未配置 DeepSeek 密钥时，本地启发式预测会优先使用高分事件信号，再结合板块提示和关键词补足预测。调用 `/api/v1/market/news/predictions` 时如果没有传 `symbols`，后端会从高优先级事件的 `relatedSymbols` 自动补全 `backtestHandoff.symbols`，方便把事件驱动预测直接交给回测接口验证。
 
 ## 行情数据顺序
 

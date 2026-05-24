@@ -102,6 +102,19 @@ class StubNewsIntelligenceService:
                     "matchedKeywords": ["算力"],
                 }
             ],
+            "eventHints": [
+                {
+                    "eventType": "order_win",
+                    "label": "中标与订单",
+                    "signal": "bullish",
+                    "score": 4.2,
+                    "count": 1,
+                    "relatedSymbols": [],
+                    "relatedNames": [],
+                    "sourceIds": ["news-1"],
+                    "matchedTitles": ["算力概念继续活跃"],
+                }
+            ],
         }
 
     def build_predictions(
@@ -134,6 +147,7 @@ class StubNewsIntelligenceService:
                 "newsItemCount": 1,
                 "keywordCount": 2,
                 "sectorHintCount": 1,
+                "eventHintCount": 1,
                 "symbolCount": len(symbols or []),
                 "warnings": ["DeepSeek API key is not configured."],
             },
@@ -228,3 +242,4 @@ def test_market_news_intelligence_endpoint_returns_structured_payload() -> None:
     assert payload["requestedLimit"] == 100
     assert payload["keywords"][0]["keyword"] == "算力"
     assert payload["sectorHints"][0]["name"] == "算力租赁"
+    assert payload["eventHints"][0]["label"] == "中标与订单"

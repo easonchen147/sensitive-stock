@@ -14,11 +14,15 @@ from ..schemas.market import (
 from ..services.deepseek_prediction import DeepSeekMarketPredictionService
 from ..services.market_data import AkshareMarketDataService
 from ..services.news_intelligence import (
+    ClsTelegraphNewsSource,
+    CninfoDisclosureNewsSource,
     EastmoneyMarketNewsSource,
     Jin10NewsService,
     MarketNewsIntelligenceService,
     MultiSourceNewsService,
     SinaFinanceNewsSource,
+    StcnArticleListSource,
+    TwentyOneJingjiArticleListSource,
 )
 from ..services.prediction_history import PredictionHistoryService
 
@@ -50,19 +54,86 @@ def _get_news_intelligence_service():
         channel=current_app.config["JIN10_CHANNEL"],
         timeout=current_app.config["HTTP_TIMEOUT"],
     )
+    extra_sources = [
+        EastmoneyMarketNewsSource(
+            url=current_app.config["EASTMONEY_NEWS_URL"],
+            timeout=current_app.config["HTTP_TIMEOUT"],
+        ),
+        SinaFinanceNewsSource(
+            url=current_app.config["SINA_FINANCE_NEWS_URL"],
+            timeout=current_app.config["HTTP_TIMEOUT"],
+        ),
+    ]
+
+    cls_url = str(current_app.config.get("CLS_TELEGRAPH_URL") or "").strip()
+    if cls_url:
+        extra_sources.append(
+            ClsTelegraphNewsSource(
+                url=cls_url,
+                timeout=current_app.config["HTTP_TIMEOUT"],
+            )
+        )
+
+    stcn_url = str(current_app.config.get("STCN_NEWS_URL") or "").strip()
+    if stcn_url:
+        extra_sources.append(
+            StcnArticleListSource(
+                url=stcn_url,
+                timeout=current_app.config["HTTP_TIMEOUT"],
+            )
+        )
+
+    jingji21_url = str(current_app.config.get("JINGJI21_CAPITAL_NEWS_URL") or "").strip()
+    if jingji21_url:
+        extra_sources.append(
+            TwentyOneJingjiArticleListSource(
+                url=jingji21_url,
+                timeout=current_app.config["HTTP_TIMEOUT"],
+            )
+        )
+
+    cninfo_disclosure_url = str(current_app.config.get("CNINFO_DISCLOSURE_URL") or "").strip()
+    cninfo_referer_url = str(
+        current_app.config.get("CNINFO_DISCLOSURE_REFERER_URL") or ""
+    ).strip()
+    cninfo_static_base_url = str(current_app.config.get("CNINFO_STATIC_BASE_URL") or "").strip()
+    if cninfo_disclosure_url and cninfo_static_base_url:
+        extra_sources.extend(
+            [
+                CninfoDisclosureNewsSource(
+                    url=cninfo_disclosure_url,
+                    referer_url=cninfo_referer_url,
+                    static_base_url=cninfo_static_base_url,
+                    column="szse_latest",
+                    market_name="深市",
+                    source="cninfo_szse_disclosures",
+                    timeout=current_app.config["HTTP_TIMEOUT"],
+                ),
+                CninfoDisclosureNewsSource(
+                    url=cninfo_disclosure_url,
+                    referer_url=cninfo_referer_url,
+                    static_base_url=cninfo_static_base_url,
+                    column="sse_latest",
+                    market_name="沪市",
+                    source="cninfo_sse_disclosures",
+                    timeout=current_app.config["HTTP_TIMEOUT"],
+                ),
+                CninfoDisclosureNewsSource(
+                    url=cninfo_disclosure_url,
+                    referer_url=cninfo_referer_url,
+                    static_base_url=cninfo_static_base_url,
+                    column="bj_latest",
+                    market_name="北交所",
+                    source="cninfo_bse_disclosures",
+                    timeout=current_app.config["HTTP_TIMEOUT"],
+                ),
+            ]
+        )
+
     return MarketNewsIntelligenceService(
         news_service=MultiSourceNewsService(
             primary_service=primary_news_service,
-            extra_sources=[
-                EastmoneyMarketNewsSource(
-                    url=current_app.config["EASTMONEY_NEWS_URL"],
-                    timeout=current_app.config["HTTP_TIMEOUT"],
-                ),
-                SinaFinanceNewsSource(
-                    url=current_app.config["SINA_FINANCE_NEWS_URL"],
-                    timeout=current_app.config["HTTP_TIMEOUT"],
-                ),
-            ],
+            extra_sources=extra_sources,
         ),
         prediction_service=DeepSeekMarketPredictionService(
             api_key=current_app.config["DEEPSEEK_API_KEY"],

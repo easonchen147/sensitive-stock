@@ -698,7 +698,7 @@ def _build_components() -> dict[str, Any]:
                 {"$ref": "#/components/schemas/MarketNewsResponse"},
                 {
                     "type": "object",
-                    "required": ["keywords", "sectorHints"],
+                    "required": ["keywords", "sectorHints", "eventHints"],
                     "properties": {
                         "keywords": {
                             "type": "array",
@@ -714,9 +714,39 @@ def _build_components() -> dict[str, Any]:
                                 "additionalProperties": True,
                             },
                         },
+                        "eventHints": {
+                            "type": "array",
+                            "items": {"$ref": "#/components/schemas/MarketEventHint"},
+                        },
                     },
                 },
             ]
+        },
+        "MarketEventHint": {
+            "type": "object",
+            "required": [
+                "eventType",
+                "label",
+                "signal",
+                "score",
+                "count",
+                "relatedSymbols",
+                "relatedNames",
+                "sourceIds",
+                "matchedTitles",
+            ],
+            "properties": {
+                "eventType": {"type": "string"},
+                "label": {"type": "string"},
+                "signal": {"type": "string", "enum": ["bullish", "neutral", "bearish"]},
+                "score": {"type": "number"},
+                "count": {"type": "integer"},
+                "relatedSymbols": {"type": "array", "items": {"type": "string"}},
+                "relatedNames": {"type": "array", "items": {"type": "string"}},
+                "sourceIds": {"type": "array", "items": {"type": "string"}},
+                "matchedTitles": {"type": "array", "items": {"type": "string"}},
+            },
+            "additionalProperties": True,
         },
         "MarketPredictionMetadata": {
             "type": "object",
@@ -734,6 +764,7 @@ def _build_components() -> dict[str, Any]:
                 "newsItemCount",
                 "keywordCount",
                 "sectorHintCount",
+                "eventHintCount",
                 "symbolCount",
             ],
             "properties": {
@@ -750,6 +781,7 @@ def _build_components() -> dict[str, Any]:
                 "newsItemCount": {"type": "integer"},
                 "keywordCount": {"type": "integer"},
                 "sectorHintCount": {"type": "integer"},
+                "eventHintCount": {"type": "integer"},
                 "symbolCount": {"type": "integer"},
                 "latencyMs": {"type": "integer"},
                 "warnings": {"type": "array", "items": {"type": "string"}},

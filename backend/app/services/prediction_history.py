@@ -38,6 +38,7 @@ class PredictionHistoryService:
             "items": payload.get("items") or [],
             "keywords": payload.get("keywords") or [],
             "sectorHints": payload.get("sectorHints") or [],
+            "eventHints": payload.get("eventHints") or [],
             "sourceQuality": payload.get("sourceQuality") or {},
             "dedupeMetadata": payload.get("dedupeMetadata") or {},
             "predictionMetadata": payload.get("predictionMetadata") or {},

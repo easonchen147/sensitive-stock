@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter
-from typing import Any
+from datetime import datetime, timedelta, timezone
+from html.parser import HTMLParser
+from typing import Any, Callable
+from urllib.parse import urljoin
 
 import requests
 
@@ -12,8 +15,19 @@ from .market_data import AkshareMarketDataService
 from .runtime_cache import TTLCache
 
 TAG_RE = re.compile(r"<[^>]+>")
+NEXT_DATA_RE = re.compile(
+    r"<script[^>]+id=[\"']__NEXT_DATA__[\"'][^>]*>(.*?)</script>",
+    re.IGNORECASE | re.DOTALL,
+)
 CN_TOKEN_RE = re.compile(r"[\u4e00-\u9fa5]{2,6}")
 EN_TOKEN_RE = re.compile(r"\b[A-Z]{2,8}\b")
+STCN_ARTICLE_RE = re.compile(r"(?:https?://(?:www\.)?stcn\.com)?/article/detail/\d+\.html$")
+JINGJI21_ARTICLE_RE = re.compile(
+    r"(?:https?://(?:www\.)?21jingji\.com)?/article/.+?\.html$"
+)
+STOCK_CODE_RE = re.compile(r"\b\d{6}\b")
+SECURITY_NAME_RE = re.compile(r"(?:证券简称|证券名称|股票简称)\s*([A-Za-z\u4e00-\u9fa5]{2,16})")
+CHINA_TIMEZONE = timezone(timedelta(hours=8))
 STOP_WORDS = {
     "消息",
     "报道",
@@ -27,6 +41,92 @@ STOP_WORDS = {
     "数据",
     "影响",
 }
+EVENT_RULES: tuple[dict[str, Any], ...] = (
+    {
+        "eventType": "share_buyback",
+        "label": "股份回购",
+        "signal": "bullish",
+        "baseScore": 3.8,
+        "phrases": ("回购",),
+    },
+    {
+        "eventType": "shareholder_increase",
+        "label": "股东增持",
+        "signal": "bullish",
+        "baseScore": 3.6,
+        "phrases": ("增持",),
+    },
+    {
+        "eventType": "equity_incentive",
+        "label": "股权激励",
+        "signal": "bullish",
+        "baseScore": 3.4,
+        "phrases": ("股权激励", "限制性股票", "员工持股计划"),
+    },
+    {
+        "eventType": "order_win",
+        "label": "中标与订单",
+        "signal": "bullish",
+        "baseScore": 3.2,
+        "phrases": ("中标", "重大合同", "签订合同", "新增订单", "订单"),
+    },
+    {
+        "eventType": "earnings_guidance_positive",
+        "label": "业绩预增与扭亏",
+        "signal": "bullish",
+        "baseScore": 3.4,
+        "phrases": ("业绩预增", "扭亏为盈", "同比增长", "业绩快报"),
+    },
+    {
+        "eventType": "dividend_distribution",
+        "label": "分红派息",
+        "signal": "bullish",
+        "baseScore": 3.0,
+        "phrases": ("分红", "派息", "利润分配"),
+    },
+    {
+        "eventType": "shareholder_reduction",
+        "label": "股东减持",
+        "signal": "bearish",
+        "baseScore": 3.6,
+        "phrases": ("减持",),
+    },
+    {
+        "eventType": "regulatory_inquiry",
+        "label": "监管问询",
+        "signal": "bearish",
+        "baseScore": 4.1,
+        "phrases": ("问询函", "关注函", "监管函", "工作函"),
+    },
+    {
+        "eventType": "investigation_penalty",
+        "label": "立案与处罚",
+        "signal": "bearish",
+        "baseScore": 4.2,
+        "phrases": ("立案", "行政处罚", "处罚", "警示函"),
+    },
+    {
+        "eventType": "delisting_risk",
+        "label": "退市与风险提示",
+        "signal": "bearish",
+        "baseScore": 4.3,
+        "phrases": ("退市风险", "终止上市", "风险提示"),
+    },
+    {
+        "eventType": "shareholder_meeting",
+        "label": "股东大会与董事会",
+        "signal": "neutral",
+        "baseScore": 2.2,
+        "phrases": ("股东大会", "董事会", "监事会"),
+    },
+    {
+        "eventType": "trading_halt_resume",
+        "label": "停复牌",
+        "signal": "neutral",
+        "baseScore": 2.5,
+        "phrases": ("停牌", "复牌"),
+    },
+)
 
 
 class Jin10NewsService:
@@ -280,6 +380,238 @@ class SinaFinanceNewsSource:
         ]
 
 
+class ClsTelegraphNewsSource:
+    name = "CLS Telegraph"
+    source = "cls_telegraph"
+
+    def __init__(
+        self,
+        *,
+        session: requests.Session | None = None,
+        url: str = "https://www.cls.cn/telegraph",
+        timeout: int = 10,
+    ) -> None:
+        self.session = session or requests.Session()
+        self.url = url
+        self.timeout = timeout
+
+    def fetch(self, limit: int) -> list[dict[str, Any]]:
+        response = self.session.get(
+            self.url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "https://www.cls.cn/",
+            },
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        raw_items = _extract_cls_telegraph_items(_response_text(response))
+        if not raw_items:
+            raise RuntimeError("CLS telegraph page returned no structured items")
+        return [self._normalize_item(item) for item in raw_items[:limit]]
+
+    def _normalize_item(self, raw_item: dict[str, Any]) -> dict[str, Any]:
+        title = TAG_RE.sub(
+            "",
+            str(raw_item.get("title") or _extract_bracket_title(raw_item.get("content")) or ""),
+        ).strip()
+        content = TAG_RE.sub(
+            "",
+            str(raw_item.get("content") or raw_item.get("brief") or title),
+        ).strip()
+        tags = raw_item.get("tags") or []
+        if isinstance(tags, str):
+            normalized_tags = [
+                item.strip() for item in re.split(r"[,，\s]+", tags) if item.strip()
+            ]
+        else:
+            normalized_tags = []
+            for item in tags:
+                if isinstance(item, dict):
+                    normalized = str(
+                        item.get("name") or item.get("label") or item.get("title") or ""
+                    ).strip()
+                else:
+                    normalized = str(item).strip()
+                if normalized:
+                    normalized_tags.append(normalized)
+
+        source_url = str(
+            raw_item.get("shareurl") or raw_item.get("assocArticleUrl") or ""
+        ).strip()
+        if source_url:
+            source_url = urljoin(self.url, source_url)
+        return {
+            "id": f"cls:{raw_item.get('id')}",
+            "publishedAt": _normalize_china_timestamp(
+                raw_item.get("ctime") or raw_item.get("modified_time")
+            ),
+            "title": title or content[:60] or self.source,
+            "content": content or title,
+            "important": bool(
+                raw_item.get("is_top")
+                or raw_item.get("bold")
+                or str(raw_item.get("level") or "").strip().upper() in {"A", "B"}
+            ),
+            "tags": normalized_tags,
+            "sourceUrl": source_url,
+            "source": self.source,
+        }
+
+
+class StcnArticleListSource:
+    name = "STCN"
+    source = "stcn_headlines"
+
+    def __init__(
+        self,
+        *,
+        session: requests.Session | None = None,
+        url: str = "https://www.stcn.com/",
+        timeout: int = 10,
+    ) -> None:
+        self.session = session or requests.Session()
+        self.url = url
+        self.timeout = timeout
+
+    def fetch(self, limit: int) -> list[dict[str, Any]]:
+        response = self.session.get(
+            self.url,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        items = _extract_headline_items(
+            _response_text(response),
+            limit=limit,
+            base_url=self.url,
+            source=self.source,
+            prefix="stcn",
+            article_pattern=STCN_ARTICLE_RE,
+        )
+        if not items:
+            raise RuntimeError("STCN homepage returned no article headlines")
+        return items
+
+
+class TwentyOneJingjiArticleListSource:
+    name = "21st Century Business Herald"
+    source = "jingji21_capital_headlines"
+
+    def __init__(
+        self,
+        *,
+        session: requests.Session | None = None,
+        url: str = "https://www.21jingji.com/channel/capital",
+        timeout: int = 10,
+    ) -> None:
+        self.session = session or requests.Session()
+        self.url = url
+        self.timeout = timeout
+
+    def fetch(self, limit: int) -> list[dict[str, Any]]:
+        response = self.session.get(
+            self.url,
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        items = _extract_headline_items(
+            _response_text(response),
+            limit=limit,
+            base_url=self.url,
+            source=self.source,
+            prefix="jingji21",
+            article_pattern=JINGJI21_ARTICLE_RE,
+            published_at_extractor=_extract_21jingji_published_at,
+        )
+        if not items:
+            raise RuntimeError("21jingji capital page returned no article headlines")
+        return items
+
+
+class CninfoDisclosureNewsSource:
+    def __init__(
+        self,
+        *,
+        session: requests.Session | None = None,
+        url: str = "https://www.cninfo.com.cn/new/disclosure",
+        referer_url: str = "https://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice",
+        static_base_url: str = "https://static.cninfo.com.cn/",
+        column: str,
+        market_name: str,
+        source: str,
+        timeout: int = 10,
+    ) -> None:
+        self.session = session or requests.Session()
+        self.url = url
+        self.referer_url = referer_url
+        self.static_base_url = static_base_url
+        self.column = column
+        self.market_name = market_name
+        self.source = source
+        self.timeout = timeout
+        self.name = f"巨潮公告-{market_name}"
+
+    def fetch(self, limit: int) -> list[dict[str, Any]]:
+        response = self.session.post(
+            self.url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Referer": self.referer_url,
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            data={
+                "column": self.column,
+                "pageNum": 1,
+                "pageSize": max(1, limit),
+                "sortName": "",
+                "sortType": "",
+                "clusterFlag": "false",
+            },
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        raw_items = _extract_cninfo_announcement_rows(payload)
+        if not raw_items:
+            raise RuntimeError(f"CNInfo disclosure returned no items for column {self.column}")
+        return [self._normalize_item(item) for item in raw_items[:limit]]
+
+    def _normalize_item(self, raw_item: dict[str, Any]) -> dict[str, Any]:
+        title = str(raw_item.get("announcementTitle") or "").strip()
+        sec_name = str(raw_item.get("secName") or "").strip()
+        sec_code = str(raw_item.get("secCode") or "").strip()
+        type_name = str(raw_item.get("announcementTypeName") or "").strip()
+        source_url = str(raw_item.get("adjunctUrl") or "").strip()
+        if source_url:
+            source_url = urljoin(self.static_base_url, source_url)
+
+        tags = [self.market_name, "公告"]
+        for item in [type_name, sec_name, sec_code]:
+            if item and item not in tags:
+                tags.append(item)
+
+        content_parts = [
+            f"市场 {self.market_name}",
+            f"证券简称 {sec_name}" if sec_name else "",
+            f"证券代码 {sec_code}" if sec_code else "",
+            f"公告类型 {type_name}" if type_name else "",
+            title,
+        ]
+        content = "；".join(part for part in content_parts if part)
+        return {
+            "id": f"{self.source}:{raw_item.get('announcementId')}",
+            "publishedAt": _normalize_china_timestamp(raw_item.get("announcementTime")),
+            "title": title or content[:60] or self.source,
+            "content": content or title,
+            "important": bool(raw_item.get("important")),
+            "tags": tags,
+            "sourceUrl": source_url,
+            "source": self.source,
+        }
+
+
 class MultiSourceNewsService:
     def __init__(
         self,
@@ -292,6 +624,24 @@ class MultiSourceNewsService:
         self.extra_sources = extra_sources or [
             EastmoneyMarketNewsSource(),
             SinaFinanceNewsSource(),
+            ClsTelegraphNewsSource(),
+            StcnArticleListSource(),
+            TwentyOneJingjiArticleListSource(),
+            CninfoDisclosureNewsSource(
+                column="szse_latest",
+                market_name="深市",
+                source="cninfo_szse_disclosures",
+            ),
+            CninfoDisclosureNewsSource(
+                column="sse_latest",
+                market_name="沪市",
+                source="cninfo_sse_disclosures",
+            ),
+            CninfoDisclosureNewsSource(
+                column="bj_latest",
+                market_name="北交所",
+                source="cninfo_bse_disclosures",
+            ),
         ]
         self._latest_cache: TTLCache[tuple[str, int], dict[str, Any]] = TTLCache(
             cache_ttl_seconds
@@ -419,10 +769,12 @@ class MarketNewsIntelligenceService:
         latest_payload = self.news_service.get_latest(limit=limit)
         keywords = self._extract_keywords(latest_payload["items"])
         sector_hints = self._build_sector_hints(keywords)
+        event_hints = self._extract_event_hints(latest_payload["items"])
         return {
             **latest_payload,
             "keywords": keywords,
             "sectorHints": sector_hints,
+            "eventHints": event_hints,
         }
 
     def build_predictions(
@@ -435,10 +787,12 @@ class MarketNewsIntelligenceService:
         latest_payload = self.news_service.get_latest(limit=limit)
         keywords = self._extract_keywords(latest_payload["items"])
         sector_hints = self._build_sector_hints(keywords)
+        event_hints = self._extract_event_hints(latest_payload["items"])
         prediction_payload = self.prediction_service.predict(
             items=latest_payload["items"],
             keywords=keywords,
             sector_hints=sector_hints,
+            event_hints=event_hints,
             symbols=symbols or [],
             thinking_type=thinking_type,
             reasoning_effort=reasoning_effort,
@@ -447,8 +801,9 @@ class MarketNewsIntelligenceService:
             **latest_payload,
             "keywords": keywords,
             "sectorHints": sector_hints,
+            "eventHints": event_hints,
             **prediction_payload,
-            "backtestHandoff": self._build_backtest_handoff(symbols or []),
+            "backtestHandoff": self._build_backtest_handoff(symbols or [], event_hints),
         }
 
     def _extract_keywords(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -512,21 +867,145 @@ class MarketNewsIntelligenceService:
         hints.sort(key=lambda item: (-item["score"], item["name"]))
         return hints[:10]
 
-    def _build_backtest_handoff(self, symbols: list[str]) -> dict[str, Any]:
+    def _extract_event_hints(self, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        aggregates: dict[str, dict[str, Any]] = {}
+
+        for item in items:
+            text_parts = [
+                str(item.get("title") or ""),
+                str(item.get("content") or ""),
+                " ".join(str(tag).strip() for tag in item.get("tags") or [] if str(tag).strip()),
+            ]
+            combined_text = " ".join(part for part in text_parts if part).strip()
+            if not combined_text:
+                continue
+
+            related_symbols = self._extract_related_symbols(item)
+            related_names = self._extract_related_names(item)
+            item_score_boost = 0.0
+            if item.get("important"):
+                item_score_boost += 0.8
+            if str(item.get("source") or "").startswith("cninfo_"):
+                item_score_boost += 0.9
+            if related_symbols:
+                item_score_boost += min(0.8, len(related_symbols) * 0.3)
+
+            for rule in EVENT_RULES:
+                matched_phrases = [
+                    phrase for phrase in rule["phrases"] if phrase and phrase in combined_text
+                ]
+                if not matched_phrases:
+                    continue
+
+                aggregate = aggregates.setdefault(
+                    str(rule["eventType"]),
+                    {
+                        "eventType": rule["eventType"],
+                        "label": rule["label"],
+                        "signal": rule["signal"],
+                        "score": 0.0,
+                        "count": 0,
+                        "relatedSymbols": [],
+                        "relatedNames": [],
+                        "sourceIds": [],
+                        "matchedTitles": [],
+                    },
+                )
+                aggregate["score"] += float(rule["baseScore"]) + item_score_boost
+                aggregate["count"] += 1
+                aggregate["relatedSymbols"] = _merge_unique_strings(
+                    aggregate["relatedSymbols"],
+                    related_symbols,
+                )
+                aggregate["relatedNames"] = _merge_unique_strings(
+                    aggregate["relatedNames"],
+                    related_names,
+                )
+                aggregate["sourceIds"] = _merge_unique_strings(
+                    aggregate["sourceIds"],
+                    [str(item.get("id") or "").strip()],
+                )
+                aggregate["matchedTitles"] = _merge_unique_strings(
+                    aggregate["matchedTitles"],
+                    [str(item.get("title") or "").strip()],
+                )
+
+        hints = [
+            {
+                **value,
+                "score": round(min(10.0, float(value["score"])), 2),
+                "sourceIds": value["sourceIds"][:8],
+                "matchedTitles": value["matchedTitles"][:5],
+            }
+            for value in aggregates.values()
+        ]
+        hints.sort(key=lambda item: (-float(item["score"]), -int(item["count"]), item["label"]))
+        return hints[:8]
+
+    def _extract_related_symbols(self, item: dict[str, Any]) -> list[str]:
+        candidates: list[str] = []
+        for value in [item.get("title"), item.get("content"), *(item.get("tags") or [])]:
+            candidates.extend(STOCK_CODE_RE.findall(str(value or "")))
+        return sorted({code for code in candidates if code})
+
+    def _extract_related_names(self, item: dict[str, Any]) -> list[str]:
+        text = f"{item.get('title', '')} {item.get('content', '')}"
+        names = [
+            match.group(1).strip("；;，,.。 ")
+            for match in SECURITY_NAME_RE.finditer(text)
+            if match.group(1).strip("；;，,.。 ")
+        ]
+        return _merge_unique_strings([], names)
+
+    def _build_backtest_handoff(
+        self,
+        symbols: list[str],
+        event_hints: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        suggested_symbols = symbols or self._suggest_symbols_from_event_hints(event_hints)
+        notes = [
+            "可将这里的候选标的直接交给量化回测，用事件主题动量策略做二次验证。",
+            "预测结果只用于研究判断与复盘，不应被视为直接交易指令。",
+        ]
+        if symbols:
+            notes.insert(0, "回测交接优先使用用户输入的观察标的。")
+        elif suggested_symbols:
+            notes.insert(0, "未提供观察标的，已根据高优先级事件提示自动补全候选股票代码。")
+        else:
+            notes.insert(0, "当前未识别到可自动回填的明确股票代码。")
+
         return {
             "endpoint": "/api/v1/backtests/run",
             "suggestedPreset": "event_theme_momentum",
-            "symbols": symbols,
+            "symbols": suggested_symbols,
             "defaultParams": {
                 "lookback_window": 20,
                 "volume_window": 5,
                 "volume_multiplier": 1.2,
             },
-            "notes": [
-                "可将这里的候选标的直接交给量化回测，用事件主题动量策略做二次验证。",
-                "预测结果只用于研究判断与复盘，不应被视为直接交易指令。",
-            ],
+            "notes": notes,
         }
+
+    def _suggest_symbols_from_event_hints(
+        self,
+        event_hints: list[dict[str, Any]],
+        limit: int = 6,
+    ) -> list[str]:
+        ranked_hints = [
+            hint
+            for hint in event_hints
+            if hint.get("relatedSymbols")
+            and (float(hint.get("score") or 0.0) >= 3.5 or int(hint.get("count") or 0) >= 2)
+        ]
+        if not ranked_hints:
+            ranked_hints = [hint for hint in event_hints if hint.get("relatedSymbols")]
+
+        symbols: list[str] = []
+        for hint in ranked_hints:
+            symbols = _merge_unique_strings(symbols, hint.get("relatedSymbols") or [])
+            if len(symbols) >= limit:
+                break
+        return symbols[:limit]
 
 
 def _format_error(error: Exception | None) -> str:
@@ -561,6 +1040,163 @@ def _parse_jsonp_payload(text: str) -> dict[str, Any]:
     if "(" in stripped and stripped.endswith(")"):
         stripped = stripped[stripped.find("(") + 1 : -1]
     return json.loads(stripped)
+
+
+class _AnchorCollector(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.anchors: list[tuple[str, str]] = []
+        self._current_href: str | None = None
+        self._current_chunks: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "a":
+            return
+        href = next((value for key, value in attrs if key.lower() == "href" and value), None)
+        self._current_href = href
+        self._current_chunks = []
+
+    def handle_data(self, data: str) -> None:
+        if self._current_href is None:
+            return
+        self._current_chunks.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "a" or self._current_href is None:
+            return
+        self.anchors.append((self._current_href, "".join(self._current_chunks)))
+        self._current_href = None
+        self._current_chunks = []
+
+
+def _response_text(response: Any) -> str:
+    apparent_encoding = str(getattr(response, "apparent_encoding", "") or "").strip()
+    if apparent_encoding and hasattr(response, "encoding"):
+        response.encoding = apparent_encoding
+
+    text = getattr(response, "text", None)
+    if isinstance(text, str):
+        return text
+
+    content = getattr(response, "content", b"")
+    if isinstance(content, (bytes, bytearray)):
+        encoding = apparent_encoding or str(getattr(response, "encoding", "") or "utf-8")
+        return bytes(content).decode(encoding, errors="ignore")
+    return str(text or "")
+
+
+def _extract_cls_telegraph_items(html_text: str) -> list[dict[str, Any]]:
+    match = NEXT_DATA_RE.search(html_text)
+    if match is None:
+        raise RuntimeError("CLS telegraph page missing __NEXT_DATA__ payload")
+    try:
+        payload = json.loads(match.group(1))
+    except json.JSONDecodeError as error:
+        raise RuntimeError("CLS telegraph __NEXT_DATA__ payload is invalid") from error
+    return _extract_first_list(payload, ["telegraphList"])
+
+
+def _extract_cninfo_announcement_rows(payload: Any) -> list[dict[str, Any]]:
+    if not isinstance(payload, dict):
+        return []
+    announcements = payload.get("announcements")
+    if isinstance(announcements, list):
+        return [item for item in announcements if isinstance(item, dict)]
+
+    classified = payload.get("classifiedAnnouncements")
+    if not isinstance(classified, list):
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for group in classified:
+        if isinstance(group, list):
+            rows.extend(item for item in group if isinstance(item, dict))
+    return rows
+
+
+def _extract_headline_items(
+    html_text: str,
+    *,
+    limit: int,
+    base_url: str,
+    source: str,
+    prefix: str,
+    article_pattern: re.Pattern[str],
+    published_at_extractor: Callable[[str], str] | None = None,
+) -> list[dict[str, Any]]:
+    parser = _AnchorCollector()
+    parser.feed(html_text)
+
+    seen_urls: set[str] = set()
+    items: list[dict[str, Any]] = []
+    for href, raw_text in parser.anchors:
+        absolute_url = urljoin(base_url, href)
+        if not (
+            article_pattern.search(href.strip()) or article_pattern.search(absolute_url.strip())
+        ):
+            continue
+        title = _normalize_anchor_title(raw_text)
+        if not title or absolute_url in seen_urls:
+            continue
+        seen_urls.add(absolute_url)
+        published_at = (
+            str(published_at_extractor(absolute_url)).strip()
+            if callable(published_at_extractor)
+            else ""
+        )
+        items.append(
+            {
+                "id": f"{prefix}:{absolute_url}",
+                "publishedAt": published_at,
+                "title": title,
+                "content": title,
+                "important": False,
+                "tags": [],
+                "sourceUrl": absolute_url,
+                "source": source,
+            }
+        )
+        if len(items) >= limit:
+            break
+    return items
+
+
+def _normalize_anchor_title(raw_text: str) -> str:
+    lines = [
+        re.sub(r"\s+", " ", line).strip()
+        for line in str(raw_text or "").splitlines()
+        if re.sub(r"\s+", " ", line).strip()
+    ]
+    if lines:
+        return lines[0]
+    return re.sub(r"\s+", " ", str(raw_text or "")).strip()
+
+
+def _normalize_china_timestamp(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    if isinstance(value, (int, float)) or str(value).strip().isdigit():
+        timestamp = float(value)
+        if timestamp > 1_000_000_000_000:
+            timestamp /= 1000
+        return datetime.fromtimestamp(timestamp, tz=CHINA_TIMEZONE).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+    return str(value).strip()
+
+
+def _extract_bracket_title(value: Any) -> str:
+    match = re.search(r"[【\[]([^】\]]+)[】\]]", str(value or ""))
+    if match is None:
+        return ""
+    return match.group(1).strip()
+
+
+def _extract_21jingji_published_at(source_url: str) -> str:
+    match = re.search(r"/article/(\d{4})(\d{2})(\d{2})/", source_url)
+    if match is None:
+        return ""
+    return f"{match.group(1)}-{match.group(2)}-{match.group(3)}"
 
 
 def _normalize_external_item(
@@ -747,3 +1383,15 @@ def _dedupe_news_items(items: list[dict[str, Any]]) -> tuple[list[dict[str, Any]
         "uniqueCount": len(deduped),
         "duplicateCount": max(0, len(items) - len(deduped)),
     }
+
+
+def _merge_unique_strings(existing: list[str], incoming: list[str]) -> list[str]:
+    merged = list(existing)
+    seen = {str(item).strip() for item in merged if str(item).strip()}
+    for item in incoming:
+        normalized = str(item).strip()
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        merged.append(normalized)
+    return merged

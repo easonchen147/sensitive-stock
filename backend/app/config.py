@@ -54,6 +54,30 @@ class DefaultConfig:
         "BACKEND_SINA_FINANCE_NEWS_URL",
         "https://zhibo.sina.com.cn/api/zhibo/feed",
     )
+    CLS_TELEGRAPH_URL = os.getenv(
+        "BACKEND_CLS_TELEGRAPH_URL",
+        "https://www.cls.cn/telegraph",
+    )
+    STCN_NEWS_URL = os.getenv(
+        "BACKEND_STCN_NEWS_URL",
+        "https://www.stcn.com/",
+    )
+    JINGJI21_CAPITAL_NEWS_URL = os.getenv(
+        "BACKEND_21JINGJI_CAPITAL_NEWS_URL",
+        "https://www.21jingji.com/channel/capital",
+    )
+    CNINFO_DISCLOSURE_URL = os.getenv(
+        "BACKEND_CNINFO_DISCLOSURE_URL",
+        "https://www.cninfo.com.cn/new/disclosure",
+    )
+    CNINFO_DISCLOSURE_REFERER_URL = os.getenv(
+        "BACKEND_CNINFO_DISCLOSURE_REFERER_URL",
+        "https://www.cninfo.com.cn/new/commonUrl?url=disclosure/list/notice",
+    )
+    CNINFO_STATIC_BASE_URL = os.getenv(
+        "BACKEND_CNINFO_STATIC_BASE_URL",
+        "https://static.cninfo.com.cn/",
+    )
     DEEPSEEK_API_KEY = os.getenv("BACKEND_DEEPSEEK_API_KEY", "")
     DEEPSEEK_BASE_URL = os.getenv("BACKEND_DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     DEEPSEEK_MODEL = os.getenv("BACKEND_DEEPSEEK_MODEL", "deepseek-v4-flash")

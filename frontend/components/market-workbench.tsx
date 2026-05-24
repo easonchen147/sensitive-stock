@@ -90,7 +90,7 @@ export function MarketWorkbench() {
     nextReasoningEffort = reasoningEffort,
   ) {
     const symbols = parseSymbolsInput(nextSymbolsInput);
-    const normalizedSymbols = symbols.length ? symbols : parseSymbolsInput(DEFAULT_SYMBOLS_INPUT);
+    const quoteSymbols = symbols.length ? symbols : parseSymbolsInput(DEFAULT_SYMBOLS_INPUT);
 
     setLoading(true);
     setError("");
@@ -105,11 +105,11 @@ export function MarketWorkbench() {
       predictionsResult,
     ] = await Promise.allSettled([
       getMarketOverview(),
-      getMarketQuotes(normalizedSymbols),
+      getMarketQuotes(quoteSymbols),
       getMarketSectors(nextSectorType, 8),
       getMarketNews(10),
       getMarketNewsIntelligence(60),
-      getMarketNewsPredictions(60, normalizedSymbols, {
+      getMarketNewsPredictions(60, symbols, {
         thinking: nextThinkingType,
         reasoningEffort: nextReasoningEffort,
       }),
@@ -270,6 +270,7 @@ export function MarketWorkbench() {
   const keywords = data.intelligence?.keywords || [];
   const sectorHints = data.intelligence?.sectorHints || [];
   const activeRun = data.detail || data.predictions;
+  const eventHints = activeRun?.eventHints || data.intelligence?.eventHints || [];
   const predictionRows = activeRun?.predictions || [];
   const historyRuns = data.history?.items || [];
   const channels = activeRun?.channels || data.news?.channels || [];
@@ -523,10 +524,38 @@ export function MarketWorkbench() {
 
         <article className="panel">
           <div className="eyebrow">规则情报</div>
-          <h2 className="panel-title">关键词与板块提示</h2>
+          <h2 className="panel-title">关键词、事件与板块提示</h2>
           <p className="panel-subtitle">
-            这里展示后端已提供的关键词提取和板块命中提示，只呈现可追溯的规则结果。
+            这里展示后端已提供的关键词提取、结构化事件提示和板块命中提示，只呈现可追溯的规则结果。
           </p>
+
+          <div className="status-list">
+            {eventHints.length ? (
+              eventHints.slice(0, 5).map((item) => (
+                <div
+                  className="status-item"
+                  data-status={item.signal === "bearish" ? "limited" : "ready"}
+                  key={item.eventType}
+                >
+                  <div className="status-head">
+                    <strong>{item.label}</strong>
+                    <span className="status-pill">
+                      {displayPredictionDirection(item.signal)} · 评分 {displayNumber(item.score)}
+                    </span>
+                  </div>
+                  <p>
+                    命中 {item.count} 次 ·{" "}
+                    {item.relatedSymbols.length
+                      ? `相关标的 ${item.relatedSymbols.join(" / ")}`
+                      : "暂无明确股票代码"}
+                  </p>
+                  {item.matchedTitles.length ? <p>{item.matchedTitles.slice(0, 2).join(" / ")}</p> : null}
+                </div>
+              ))
+            ) : (
+              <StateSurface state="empty" title="当前规则未命中结构化事件提示。" />
+            )}
+          </div>
 
           <div className="keyword-cloud">
             {keywords.length ? (
@@ -708,7 +737,7 @@ function PredictionMetadataPanel({ metadata }: { metadata: MarketPredictionMetad
       <MetricCard
         label="上下文规模"
         value={`${metadata.newsItemCount} 条资讯`}
-        note={`${metadata.keywordCount} 个关键词 / ${metadata.sectorHintCount} 个板块提示`}
+        note={`${metadata.keywordCount} 个关键词 / ${metadata.eventHintCount ?? 0} 个事件 / ${metadata.sectorHintCount} 个板块`}
       />
     </div>
   );

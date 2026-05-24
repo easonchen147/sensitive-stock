@@ -431,9 +431,22 @@ export type MarketSectorHint = {
   matchedKeywords: string[];
 };
 
+export type MarketEventHint = {
+  eventType: string;
+  label: string;
+  signal: "bullish" | "neutral" | "bearish";
+  score: number;
+  count: number;
+  relatedSymbols: string[];
+  relatedNames: string[];
+  sourceIds: string[];
+  matchedTitles: string[];
+};
+
 export type MarketNewsIntelligenceResponse = MarketNewsResponse & {
   keywords: MarketKeyword[];
   sectorHints: MarketSectorHint[];
+  eventHints: MarketEventHint[];
 };
 
 export type MarketPredictionMetadata = {
@@ -450,6 +463,7 @@ export type MarketPredictionMetadata = {
   newsItemCount: number;
   keywordCount: number;
   sectorHintCount: number;
+  eventHintCount: number;
   symbolCount: number;
   latencyMs?: number;
   warnings?: string[];

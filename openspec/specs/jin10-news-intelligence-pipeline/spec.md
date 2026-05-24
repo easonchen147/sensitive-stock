@@ -15,11 +15,14 @@ The system SHALL fetch Jin10 realtime news through the latest available official
 - **THEN** the system falls back to the public newest feed, returns the available normalized items, and marks the response as degraded
 
 ### Requirement: News intelligence SHALL extract keywords for market analysis
-The system SHALL extract structured keywords from the normalized Jin10 items using tags, titles, content, and rule-based token heuristics so the output can be reused by sector prediction workflows.
+The system SHALL extract structured keywords from the normalized market-news
+items using tags, titles, content, and rule-based token heuristics so the
+output can be reused by sector prediction workflows, and SHALL also emit
+structured `eventHints` for high-value announcement or news events.
 
-#### Scenario: Intelligence request includes repeated market topics
-- **WHEN** multiple Jin10 items mention the same market theme, company, or macro topic
-- **THEN** the system returns ranked keywords with occurrence counts and source coverage metadata
+#### Scenario: Intelligence request includes event-driven items
+- **WHEN** the aggregated market-news items contain recognizable events such as buybacks, reductions, incentives, shareholder meetings, earnings guidance, or regulatory risk signals
+- **THEN** the intelligence response returns ranked `eventHints` with direction, score, source linkage, and related security context
 
 ### Requirement: News intelligence SHALL generate sector prediction hints
 The system SHALL compare extracted keywords against concept and industry sector names and produce ranked sector hints that can be consumed by later“大盘 / 板块预测” logic.
@@ -58,15 +61,23 @@ The system SHALL cache recent successful Jin10 latest-news payloads in memory an
 The system SHALL preserve the existing Jin10 realtime ingestion path while also
 fetching additional market news channels, normalizing items into the shared
 market-news shape, deduplicating repeated stories, and returning per-channel
-status, source-quality, and dedupe metadata.
+status, source-quality, and dedupe metadata. The default configured extra
+channels SHALL include Eastmoney stock news, Sina finance live feed, CLS
+telegraph page items, STCN article headlines, 21st Century Business Herald
+capital-market headlines, and CNInfo official disclosure feeds for SZSE, SSE,
+and BSE when those sources are reachable.
 
-#### Scenario: Multiple channels return overlapping stories
-- **WHEN** Jin10 and another configured market news channel return the same or substantially similar story
-- **THEN** the intelligence payload contains one normalized story, channel metadata that records which channels were queried, `sourceQuality.duplicateItems`, and `dedupeMetadata.duplicateCount`
+#### Scenario: CNInfo official disclosure source is reachable
+- **WHEN** a configured CNInfo market-disclosure source responds successfully
+- **THEN** the aggregation layer includes normalized official disclosure items with announcement title, publish time, security context, and source link in the merged news payload
 
-#### Scenario: One non-primary channel fails
-- **WHEN** one additional market news channel fails while at least one other channel succeeds
-- **THEN** the news payload still succeeds, marks the response as degraded, includes warning metadata for the failed channel, and increments `sourceQuality.failedChannels`
+#### Scenario: CNInfo disclosure source returns structured market-specific rows
+- **WHEN** the CNInfo disclosure endpoint returns flat announcement rows for a configured market column
+- **THEN** the source normalizes the announcement type, security name, and security code into the shared item structure without changing the existing API contract
+
+#### Scenario: One official disclosure source fails
+- **WHEN** one CNInfo market-disclosure channel fails while at least one other source succeeds
+- **THEN** the aggregated news payload still succeeds, marks the response as degraded, records the failed disclosure channel in `channels`, and appends a warning explaining the failure
 
 ### Requirement: Market news predictions SHALL use DeepSeek V4 Flash when configured
 The system SHALL use a DeepSeek OpenAI-compatible chat completion adapter with
@@ -93,17 +104,21 @@ bounded TTL.
 
 ### Requirement: Market prediction API SHALL expose a prediction and backtest handoff payload
 The system SHALL expose a protected backend endpoint that returns multi-source
-news, keywords, sector hints, structured predictions, risk notes, source-quality
-metadata, dedupe metadata, prediction operational metadata, and a backtest
-handoff object suitable for validating the predicted themes.
+news, keywords, sector hints, event hints, structured predictions, risk notes,
+source-quality metadata, dedupe metadata, prediction operational metadata, and
+a backtest handoff object suitable for validating the predicted themes.
 
 #### Scenario: Client calls the prediction endpoint
 - **WHEN** a client calls `/api/v1/market/news/predictions`
-- **THEN** the response contains `items`, `channels`, `sourceQuality`, `dedupeMetadata`, `keywords`, `sectorHints`, `predictions`, `predictionMetadata`, `riskNotes`, and `backtestHandoff`
+- **THEN** the response contains `items`, `channels`, `sourceQuality`, `dedupeMetadata`, `keywords`, `sectorHints`, `eventHints`, `predictions`, `predictionMetadata`, `riskNotes`, and `backtestHandoff`
 
-#### Scenario: Client supplies symbols for prediction validation
-- **WHEN** a client supplies `symbols` in the prediction query
-- **THEN** the response includes those symbols in the prediction context, in the prediction cache key input, and in the backtest handoff payload
+#### Scenario: Prediction context contains event hints
+- **WHEN** one or more `eventHints` are available
+- **THEN** both the remote-model path and the local heuristic path use those event hints as part of the prediction context instead of ignoring them
+
+#### Scenario: Client does not supply symbols but event hints include specific securities
+- **WHEN** the prediction request omits `symbols` and high-priority `eventHints` contain related stock codes
+- **THEN** the backtest handoff payload uses those related stock codes as suggested symbols for follow-up validation
 
 ### Requirement: Market news aggregation SHALL provide source quality scoring
 The market news aggregation payload SHALL include a normalized source-quality score and component scores for coverage, freshness, reliability, and duplicate pressure.
@@ -133,3 +148,4 @@ The prediction endpoint SHALL hand successful prediction payloads to the local p
 #### Scenario: Prediction response contains rows
 - **WHEN** the prediction endpoint produces one or more prediction rows
 - **THEN** the response includes `runId` and prediction ids, and the same run can be retrieved from prediction history
+

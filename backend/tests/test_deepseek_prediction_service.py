@@ -79,6 +79,34 @@ def test_prediction_uses_heuristic_when_deepseek_key_is_missing() -> None:
     assert payload["riskNotes"]
 
 
+def test_heuristic_prediction_prioritizes_event_hints() -> None:
+    service = DeepSeekMarketPredictionService(api_key="")
+    context = {
+        **_context(),
+        "event_hints": [
+            {
+                "eventType": "share_buyback",
+                "label": "股份回购",
+                "signal": "bullish",
+                "score": 6.2,
+                "count": 1,
+                "relatedSymbols": ["000001"],
+                "relatedNames": ["平安银行"],
+                "sourceIds": ["news-1"],
+                "matchedTitles": ["平安银行发布股份回购公告"],
+            }
+        ],
+    }
+
+    payload = service.predict(**context)
+
+    assert payload["predictionMetadata"]["eventHintCount"] == 1
+    assert payload["predictionMetadata"]["model"] == "event-keyword-sector-rules"
+    assert payload["predictions"][0]["targetType"] == "symbol"
+    assert payload["predictions"][0]["target"] == "000001 平安银行"
+    assert payload["predictions"][0]["drivers"] == ["平安银行发布股份回购公告"]
+
+
 def test_prediction_calls_deepseek_v4_flash_and_parses_json_response() -> None:
     response_payload = {
         "choices": [
@@ -128,9 +156,63 @@ def test_prediction_calls_deepseek_v4_flash_and_parses_json_response() -> None:
     assert payload["predictionMetadata"]["newsItemCount"] == 1
     assert payload["predictionMetadata"]["keywordCount"] == 1
     assert payload["predictionMetadata"]["sectorHintCount"] == 1
+    assert payload["predictionMetadata"]["eventHintCount"] == 0
     assert payload["predictionMetadata"]["symbolCount"] == 1
     assert payload["predictionMetadata"]["inputDigest"]
     assert payload["predictions"][0]["confidence"] == 0.73
+
+
+def test_prediction_sends_event_hints_to_deepseek_context() -> None:
+    response_payload = {
+        "choices": [
+            {
+                "message": {
+                    "content": json.dumps(
+                        {
+                            "summary": "事件提示优先。",
+                            "riskNotes": ["继续验证。"],
+                            "predictions": [
+                                {
+                                    "targetType": "symbol",
+                                    "target": "000001 平安银行",
+                                    "direction": "bullish",
+                                    "confidence": 0.7,
+                                    "score": 7,
+                                    "horizon": "1 至 3 个交易日",
+                                    "drivers": ["股份回购"],
+                                    "sourceIds": ["news-1"],
+                                }
+                            ],
+                        }
+                    )
+                }
+            }
+        ]
+    }
+    session = FakeSession(payload=response_payload)
+    service = DeepSeekMarketPredictionService(api_key="test-key", session=session)
+    context = {
+        **_context(),
+        "event_hints": [
+            {
+                "eventType": "share_buyback",
+                "label": "股份回购",
+                "signal": "bullish",
+                "score": 6.2,
+                "count": 1,
+                "relatedSymbols": ["000001"],
+                "relatedNames": ["平安银行"],
+                "sourceIds": ["news-1"],
+                "matchedTitles": ["平安银行发布股份回购公告"],
+            }
+        ],
+    }
+
+    payload = service.predict(**context)
+    user_context = json.loads(session.calls[0]["json"]["messages"][1]["content"])
+
+    assert user_context["eventHints"][0]["eventType"] == "share_buyback"
+    assert payload["predictionMetadata"]["eventHintCount"] == 1
 
 
 def test_prediction_reuses_cached_deepseek_payload_for_equivalent_context() -> None:

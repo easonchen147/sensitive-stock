@@ -87,6 +87,7 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
     assert "MarketNewsPredictionsResponse" in schemas
     assert "MarketPrediction" in schemas
     assert "MarketPredictionMetadata" in schemas
+    assert "MarketEventHint" in schemas
     assert "MarketNewsSourceQuality" in schemas
     assert "MarketNewsDedupeMetadata" in schemas
     assert "PredictionHistoryResponse" in schemas
@@ -130,6 +131,8 @@ def test_openapi_components_publish_shared_error_and_backend_schemas() -> None:
     assert "thinkingType" in prediction_metadata["required"]
     assert "reasoningEffort" in prediction_metadata["required"]
     assert "requestMode" in prediction_metadata["required"]
+    assert "eventHintCount" in prediction_metadata["required"]
+    assert "relatedSymbols" in schemas["MarketEventHint"]["required"]
     assert "qualityScore" in schemas["MarketNewsSourceQuality"]["required"]
     assert "predictionId" in schemas["MarketPrediction"]["properties"]
     assert (
