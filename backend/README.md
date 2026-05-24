@@ -30,6 +30,15 @@ uv sync --locked
 
 ## 启动
 
+后端默认从 `backend/.env` 读取业务配置，不把进程环境变量作为业务配置来源。首次准备本地配置：
+
+```powershell
+cd backend
+copy .env.example .env
+```
+
+然后编辑 `backend/.env` 中的管理员账号、认证密钥、数据源和模型参数。
+
 ```powershell
 cd backend
 poetry run flask --app wsgi:application run --debug --port 5000

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import akshare as ak
 import pandas as pd
 import requests
+
+from file_env import get_backend_env_int, get_backend_env_value
 
 from .runtime_cache import TTLCache
 
@@ -40,16 +41,16 @@ class AkshareMarketDataService:
         resolved_tickflow_api_key = (
             tickflow_api_key
             if tickflow_api_key is not None
-            else os.environ.get("TICKFLOW_API_KEY", "")
+            else get_backend_env_value("TICKFLOW_API_KEY", "")
         )
         self.tickflow_api_key = resolved_tickflow_api_key.strip()
         self.tickflow_base_url = (
             tickflow_base_url
             if tickflow_base_url is not None
-            else os.environ.get("TICKFLOW_BASE_URL", "https://api.tickflow.org")
+            else get_backend_env_value("TICKFLOW_BASE_URL", "https://api.tickflow.org")
         ).strip()
         self.tickflow_timeout = int(
-            tickflow_timeout or os.environ.get("BACKEND_TICKFLOW_TIMEOUT", timeout)
+            tickflow_timeout or get_backend_env_int("BACKEND_TICKFLOW_TIMEOUT", timeout)
         )
         self._tickflow_client = None
         self._cache: TTLCache[tuple[Any, ...], dict[str, Any]] = TTLCache(cache_ttl_seconds)

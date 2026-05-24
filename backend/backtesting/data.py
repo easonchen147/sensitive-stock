@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import random
 import time
 from abc import ABC, abstractmethod
@@ -12,6 +11,8 @@ from typing import Literal
 import akshare as ak
 import pandas as pd
 import requests
+
+from file_env import get_backend_env_flag, get_backend_env_int, get_backend_env_value
 
 
 class DataProviderError(RuntimeError):
@@ -67,10 +68,7 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
-    raw = os.environ.get(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
+    return get_backend_env_flag(name, default)
 
 
 def _symbol_to_exchange_suffix(symbol: str) -> str:
@@ -249,14 +247,14 @@ class SinaDirectProvider(AbstractDataProvider):
 class TushareProvider(AbstractDataProvider):
     """
     Tushare API Provider.
-    Requires 'TUSHARE_TOKEN' environment variable.
+    Requires `TUSHARE_TOKEN` in the backend `.env` file.
     """
     source_name = "tushare"
 
     def get_ohlcv(self, request: HistoricalDataRequest) -> pd.DataFrame:
-        token = os.environ.get("TUSHARE_TOKEN")
+        token = get_backend_env_value("TUSHARE_TOKEN", "")
         if not token:
-            raise DataProviderError("Tushare Token not found in environment variables")
+            raise DataProviderError("Tushare Token not found in backend .env file")
 
         # Convert symbol to Tushare format (e.g. 600000 -> 600000.SH)
         symbol = request.symbol
@@ -347,20 +345,23 @@ class TickflowProvider(AbstractDataProvider):
     ) -> None:
         self.client_factory = client_factory
         resolved_api_key = (
-            api_key if api_key is not None else os.environ.get("TICKFLOW_API_KEY", "")
+            api_key if api_key is not None else get_backend_env_value("TICKFLOW_API_KEY", "")
         )
         self.api_key = resolved_api_key.strip()
         self.base_url = (
             base_url
             if base_url is not None
-            else os.environ.get("TICKFLOW_BASE_URL", "https://api.tickflow.org")
+            else get_backend_env_value("TICKFLOW_BASE_URL", "https://api.tickflow.org")
         ).strip()
         self.free_base_url = (
             free_base_url
             if free_base_url is not None
-            else os.environ.get("TICKFLOW_FREE_BASE_URL", "https://free-api.tickflow.org")
+            else get_backend_env_value(
+                "TICKFLOW_FREE_BASE_URL",
+                "https://free-api.tickflow.org",
+            )
         ).strip()
-        self.timeout = int(timeout or os.environ.get("BACKEND_TICKFLOW_TIMEOUT", "10"))
+        self.timeout = int(timeout or get_backend_env_int("BACKEND_TICKFLOW_TIMEOUT", 10))
         self._client = None
 
     def _get_client(self):
@@ -444,7 +445,7 @@ class SmartDataProvider(AbstractDataProvider):
             if tickflow_provider is not None:
                 self.providers.append(tickflow_provider)
 
-        if os.environ.get("TUSHARE_TOKEN"):
+        if get_backend_env_value("TUSHARE_TOKEN", ""):
             self.providers.append(TushareProvider())
 
         self.providers.append(SinaDirectProvider())

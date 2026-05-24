@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import pandas as pd
+from pathlib import Path
 
+import pandas as pd
+import pytest
+
+import file_env
 from backtesting.data import (
     DataProviderError,
     HistoricalDataRequest,
@@ -10,12 +14,37 @@ from backtesting.data import (
 )
 
 
-def test_smart_data_provider_reports_akshare_tickflow_first_priority(monkeypatch) -> None:
-    monkeypatch.setenv("TUSHARE_TOKEN", "token")
-    monkeypatch.delenv("BACKEND_MARKET_DATA_PREFER_TICKFLOW", raising=False)
-    monkeypatch.delenv("BACKEND_MARKET_DATA_ENABLE_TICKFLOW", raising=False)
+@pytest.fixture(autouse=True)
+def _clear_backend_file_env_cache() -> None:
+    file_env.clear_backend_file_env_cache()
+    yield
+    file_env.clear_backend_file_env_cache()
 
-    provider = SmartDataProvider()
+
+def _build_provider(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    env_values: dict[str, str] | None = None,
+) -> SmartDataProvider:
+    payload = env_values or {}
+    lines = [f"{key}={value}" for key, value in payload.items()]
+    (tmp_path / ".env").write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    monkeypatch.setattr(file_env, "BACKEND_ROOT", tmp_path)
+    file_env.clear_backend_file_env_cache()
+    return SmartDataProvider()
+
+
+def test_smart_data_provider_reports_akshare_tickflow_first_priority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _build_provider(
+        tmp_path,
+        monkeypatch,
+        {
+            "TUSHARE_TOKEN": "token",
+        },
+    )
 
     assert provider.describe_source_order() == [
         "akshare",
@@ -25,11 +54,17 @@ def test_smart_data_provider_reports_akshare_tickflow_first_priority(monkeypatch
     ]
 
 
-def test_smart_data_provider_can_prefer_tickflow(monkeypatch) -> None:
-    monkeypatch.setenv("BACKEND_MARKET_DATA_PREFER_TICKFLOW", "true")
-    monkeypatch.delenv("TUSHARE_TOKEN", raising=False)
-
-    provider = SmartDataProvider()
+def test_smart_data_provider_can_prefer_tickflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _build_provider(
+        tmp_path,
+        monkeypatch,
+        {
+            "BACKEND_MARKET_DATA_PREFER_TICKFLOW": "true",
+        },
+    )
 
     assert provider.describe_source_order() == [
         "tickflow",
@@ -38,11 +73,18 @@ def test_smart_data_provider_can_prefer_tickflow(monkeypatch) -> None:
     ]
 
 
-def test_smart_data_provider_can_disable_tickflow(monkeypatch) -> None:
-    monkeypatch.setenv("BACKEND_MARKET_DATA_ENABLE_TICKFLOW", "false")
-    monkeypatch.setenv("TUSHARE_TOKEN", "token")
-
-    provider = SmartDataProvider()
+def test_smart_data_provider_can_disable_tickflow(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = _build_provider(
+        tmp_path,
+        monkeypatch,
+        {
+            "BACKEND_MARKET_DATA_ENABLE_TICKFLOW": "false",
+            "TUSHARE_TOKEN": "token",
+        },
+    )
 
     assert provider.describe_source_order() == [
         "akshare",
