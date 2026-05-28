@@ -669,3 +669,171 @@ export type PortfolioOptimizationResponse = {
   statistics: Record<string, number>;
   metadata: CapabilityMetadata;
 };
+
+// --- New types for Phase 1 ---
+
+export type StockDetail = {
+  symbol: string;
+  name?: string;
+  industry?: string;
+  listedDate?: string;
+  totalShares?: number | null;
+  floatShares?: number | null;
+  marketCap?: number | null;
+  floatMarketCap?: number | null;
+  price?: number | null;
+  changePercent?: number | null;
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+  preClose?: number | null;
+  volume?: number | null;
+  amount?: number | null;
+  pe?: number | null;
+  pb?: number | null;
+  high52w?: number | null;
+  low52w?: number | null;
+  turnoverRate?: number | null;
+  volumeRatio?: number | null;
+  error?: string;
+  degraded?: boolean;
+};
+
+export type KlineDataPoint = {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+  amount?: number | null;
+  turnover?: number | null;
+};
+
+export type KlineResponse = {
+  symbol: string;
+  period: string;
+  items: KlineDataPoint[];
+  source: string;
+  degraded: boolean;
+  error?: string;
+};
+
+export type FinancialSummaryItem = {
+  reportDate: string;
+  revenue?: number | null;
+  netIncome?: number | null;
+  totalAssets?: number | null;
+  totalLiabilities?: number | null;
+  roe?: number | null;
+  grossMargin?: number | null;
+  netMargin?: number | null;
+};
+
+export type FinancialSummaryResponse = {
+  symbol: string;
+  items: FinancialSummaryItem[];
+  source: string;
+  degraded: boolean;
+  error?: string;
+};
+
+export type StockNewsItem = {
+  title: string;
+  content?: string;
+  publishedAt?: string;
+  source?: string;
+  url?: string;
+};
+
+export type StockNewsResponse = {
+  symbol: string;
+  items: StockNewsItem[];
+  source: string;
+  degraded: boolean;
+  error?: string;
+};
+
+export type NewsCategory = {
+  id: string;
+  label: string;
+};
+
+export type NewsCategoriesResponse = {
+  categories: NewsCategory[];
+};
+
+export type StrategyGeneratePayload = {
+  description: string;
+};
+
+export type StrategyGenerateResponse = {
+  code: string;
+  params: Record<string, unknown>;
+  parameterSchema: BacktestPresetParameter[];
+  explanation: string;
+  riskNotes: string[];
+  degraded: boolean;
+  error?: string | null;
+};
+
+export type StockQAPayload = {
+  question: string;
+  symbols?: string[];
+};
+
+export type StockQAResponse = {
+  answer: string;
+  sources: string[];
+  dataReferences: Array<{ symbol: string; name: string; type: string }>;
+  degraded: boolean;
+  error?: string | null;
+};
+
+// --- Daily Report ---
+
+export type DailyReport = {
+  date: string;
+  marketSummary: string;
+  topPicks: Array<{
+    symbol: string;
+    name: string;
+    score: number;
+    reason: string;
+    price: number;
+    changePercent: number;
+  }>;
+  sectorAnalysis: Array<{
+    sector: string;
+    trend: string;
+    recommendation: string;
+  }>;
+  riskWarnings: string[];
+  aiInsights?: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type DailyRunPayload = {
+  universe?: string[];
+};
+
+export type DailyHistoryResponse = {
+  items: DailyReport[];
+};
+
+// Extended DiagnosisResponse with AI fields
+export type DiagnosisTechnicalScore = {
+  name: string;
+  label: string;
+  value: number | string;
+  tone: string;
+  score?: number;
+};
+
+export type DiagnosisAIResponse = DiagnosisResponse & {
+  aiAnalysis?: string | null;
+  technicalScores?: {
+    indicators: DiagnosisTechnicalScore[];
+    composite: number;
+  };
+};

@@ -6,6 +6,9 @@ import type {
   BacktestRunPayload,
   BacktestRunResponse,
   Capability,
+  DailyHistoryResponse,
+  DailyReport,
+  DailyRunPayload,
   MarketNewsIntelligenceResponse,
   MarketPredictionDetailResponse,
   MarketPredictionEvaluationResponse,
@@ -291,4 +294,54 @@ export async function logout(): Promise<void> {
   await fetchAuthJson<{ ok: boolean }>("/api/auth/logout", {
     method: "POST",
   });
+}
+
+// --- New API functions for Phase 1 ---
+
+export async function getStockDetail(symbol: string): Promise<import("@/types/api").StockDetail> {
+  return fetchOpenApiRoute("stockDetail" as any, { pathParams: { symbol } });
+}
+
+export async function getKlineData(
+  symbol: string,
+  period: string = "daily",
+  startDate?: string,
+  endDate?: string,
+): Promise<import("@/types/api").KlineResponse> {
+  const query: Record<string, string> = { period };
+  if (startDate) query.startDate = startDate;
+  if (endDate) query.endDate = endDate;
+  return fetchOpenApiRoute("stockKline" as any, { pathParams: { symbol }, query });
+}
+
+export async function getFinancialSummary(symbol: string): Promise<import("@/types/api").FinancialSummaryResponse> {
+  return fetchOpenApiRoute("stockFinancials" as any, { pathParams: { symbol } });
+}
+
+export async function getStockNews(symbol: string, limit = 10): Promise<import("@/types/api").StockNewsResponse> {
+  return fetchOpenApiRoute("stockNews" as any, { pathParams: { symbol }, query: { limit } });
+}
+
+export async function getNewsCategories(): Promise<import("@/types/api").NewsCategoriesResponse> {
+  return fetchOpenApiRoute("newsCategories" as any);
+}
+
+export async function generateStrategy(description: string): Promise<import("@/types/api").StrategyGenerateResponse> {
+  return fetchOpenApiRoute("generateStrategy" as any, { body: { description } });
+}
+
+export async function askStockQuestion(question: string, symbols: string[] = []): Promise<import("@/types/api").StockQAResponse> {
+  return fetchOpenApiRoute("stockQA" as any, { body: { question, symbols } });
+}
+
+export async function runDailyAnalysis(universe?: string[]): Promise<DailyReport> {
+  return fetchOpenApiRoute("dailyRun" as any, { body: { universe } });
+}
+
+export async function getLatestDailyReport(): Promise<DailyReport> {
+  return fetchOpenApiRoute("dailyLatest" as any);
+}
+
+export async function getDailyHistory(limit = 10): Promise<DailyHistoryResponse> {
+  return fetchOpenApiRoute("dailyHistory" as any, { query: { limit } });
 }

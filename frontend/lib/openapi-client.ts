@@ -71,6 +71,16 @@ export const OPENAPI_ROUTE_BINDINGS = {
   factorsAnalyze: { method: "POST", path: "/api/v1/factors/analyze", public: false },
   portfolioOverview: { method: "GET", path: "/api/v1/portfolio", public: false },
   portfolioOptimize: { method: "POST", path: "/api/v1/portfolio/optimize", public: false },
+  stockDetail: { method: "GET", path: "/api/v1/market/stock/{symbol}/detail", public: false },
+  stockKline: { method: "GET", path: "/api/v1/market/stock/{symbol}/kline", public: false },
+  stockFinancials: { method: "GET", path: "/api/v1/market/stock/{symbol}/financials", public: false },
+  stockNews: { method: "GET", path: "/api/v1/market/stock/{symbol}/news", public: false },
+  newsCategories: { method: "GET", path: "/api/v1/market/news/categories", public: false },
+  generateStrategy: { method: "POST", path: "/api/v1/backtests/generate-strategy", public: false },
+  stockQA: { method: "POST", path: "/api/v1/qa/ask", public: false },
+  dailyRun: { method: "POST", path: "/api/v1/daily/run", public: false },
+  dailyLatest: { method: "GET", path: "/api/v1/daily/latest", public: false },
+  dailyHistory: { method: "GET", path: "/api/v1/daily/history", public: false },
 } as const;
 
 export type OpenApiRouteKey = keyof typeof OPENAPI_ROUTE_BINDINGS;
@@ -94,6 +104,16 @@ export type OpenApiRouteResponseMap = {
   diagnosisRun: DiagnosisResponse;
   factorsAnalyze: FactorAnalysisResponse;
   portfolioOptimize: PortfolioOptimizationResponse;
+  stockDetail: import("@/types/api").StockDetail;
+  stockKline: import("@/types/api").KlineResponse;
+  stockFinancials: import("@/types/api").FinancialSummaryResponse;
+  stockNews: import("@/types/api").StockNewsResponse;
+  newsCategories: import("@/types/api").NewsCategoriesResponse;
+  generateStrategy: import("@/types/api").StrategyGenerateResponse;
+  stockQA: import("@/types/api").StockQAResponse;
+  dailyRun: import("@/types/api").DailyReport;
+  dailyLatest: import("@/types/api").DailyReport;
+  dailyHistory: import("@/types/api").DailyHistoryResponse;
 };
 
 export type OpenApiRouteRequestMap = {
@@ -103,6 +123,9 @@ export type OpenApiRouteRequestMap = {
   diagnosisRun: DiagnosisPayload;
   factorsAnalyze: FactorAnalysisPayload;
   portfolioOptimize: PortfolioOptimizationPayload;
+  generateStrategy: import("@/types/api").StrategyGeneratePayload;
+  stockQA: import("@/types/api").StockQAPayload;
+  dailyRun: import("@/types/api").DailyRunPayload;
 };
 
 type QueryValue = string | number | boolean | null | undefined;

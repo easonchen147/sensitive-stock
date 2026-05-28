@@ -5,12 +5,14 @@ from flask import Flask
 from .auth import blueprint as auth_blueprint
 from .backtests import blueprint as backtests_blueprint
 from .capabilities import blueprint as capabilities_blueprint
+from .daily import blueprint as daily_blueprint
 from .diagnosis import blueprint as diagnosis_blueprint
 from .factors import blueprint as factors_blueprint
 from .health import blueprint as health_blueprint
 from .market import blueprint as market_blueprint
 from .openapi import blueprint as openapi_blueprint
 from .portfolio import blueprint as portfolio_blueprint
+from .qa import blueprint as qa_blueprint
 from .screener import blueprint as screener_blueprint
 
 
@@ -26,6 +28,8 @@ def register_blueprints(app: Flask) -> None:
         screener_blueprint,
         diagnosis_blueprint,
         factors_blueprint,
+        daily_blueprint,
         portfolio_blueprint,
+        qa_blueprint,
     ):
         app.register_blueprint(blueprint, url_prefix=api_prefix)

@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Briefcase,
+  Calendar,
   FlaskConical,
   LayoutDashboard,
   LineChart,
+  MessageSquare,
   Search,
   Stethoscope,
 } from "lucide-react";
@@ -80,6 +82,20 @@ const NAV_ITEMS = [
     icon: Briefcase,
     summary: "组合优化目标、权重分配、统计指标和风险提示。",
   },
+  {
+    href: "/qa",
+    label: "AI 问答",
+    badge: "智能",
+    icon: MessageSquare,
+    summary: "输入股票代码和问题，获取 AI 驱动的分析和回答。",
+  },
+  {
+    href: "/daily",
+    label: "每日复盘",
+    badge: "日报",
+    icon: Calendar,
+    summary: "AI 驱动的每日市场分析、精选推荐和风险提示。",
+  },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -99,17 +115,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar className="border-r border-sidebar-border bg-rail text-white">
         <SidebarHeader className="p-4">
-          <div className="grid gap-2">
-            <h1 className="font-display text-lg font-bold tracking-tight">
-              敏感股票研究台
-            </h1>
-            <p className="text-xs text-white/60">
-              预测 · 回测 · 因子 · 组合
-            </p>
-          </div>
-          <p className="mt-2 text-xs leading-relaxed text-white/50">
-            统一入口服务 A 股研究、预测、验证与组合配置，所有可见模块均有接口支撑。
-          </p>
+          <h1 className="font-display text-lg font-bold tracking-tight">
+            敏感股票研究台
+          </h1>
         </SidebarHeader>
 
         <Separator className="bg-white/10" />
@@ -162,17 +170,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="min-w-0">
               <p className="text-sm font-bold text-ink">{currentItem.label}</p>
               <p className="truncate text-xs text-muted">{currentItem.summary}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <Badge variant="outline" className="border-positive/25 bg-positive-soft text-positive">
-                数据通路
-              </Badge>
-              <Badge variant="outline" className="bg-neutral-soft text-muted">
-                模型预测
-              </Badge>
-              <Badge variant="outline" className="border-positive/25 bg-positive-soft text-positive">
-                回测验证
-              </Badge>
             </div>
           </div>
         </header>

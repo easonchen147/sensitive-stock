@@ -11,8 +11,15 @@ from ..schemas.market import (
     MarketSectorsQuery,
     PredictionHistoryQuery,
 )
+from ..schemas.stock_detail import (
+    FinancialSummaryQuery,
+    KlineQuery,
+    StockDetailQuery,
+    StockNewsQuery,
+)
 from ..services.deepseek_prediction import DeepSeekMarketPredictionService
 from ..services.market_data import AkshareMarketDataService
+from ..services.stock_detail import StockDetailService
 from ..services.news_intelligence import (
     ClsTelegraphNewsSource,
     CninfoDisclosureNewsSource,
@@ -250,3 +257,53 @@ def market_prediction_evaluation(run_id: str):
             status_code=404,
         )
     return jsonify(evaluation)
+
+
+def _get_stock_detail_service():
+    return StockDetailService()
+
+
+@blueprint.get("/market/stock/<symbol>/detail")
+def stock_detail(symbol: str):
+    service = _get_stock_detail_service()
+    return jsonify(service.get_stock_detail(symbol))
+
+
+@blueprint.get("/market/stock/<symbol>/kline")
+def stock_kline(symbol: str):
+    query_params = {**request.args.to_dict(flat=True), "symbol": symbol}
+    query = KlineQuery.model_validate(query_params)
+    service = _get_stock_detail_service()
+    return jsonify(
+        service.get_kline_data(
+            symbol=query.symbol,
+            period=query.period,
+            start_date=query.start_date,
+            end_date=query.end_date,
+        )
+    )
+
+
+@blueprint.get("/market/stock/<symbol>/financials")
+def stock_financials(symbol: str):
+    service = _get_stock_detail_service()
+    return jsonify(service.get_financial_summary(symbol))
+
+
+@blueprint.get("/market/stock/<symbol>/news")
+def stock_news(symbol: str):
+    query_params = {**request.args.to_dict(flat=True), "symbol": symbol}
+    query = StockNewsQuery.model_validate(query_params)
+    service = _get_stock_detail_service()
+    return jsonify(service.get_stock_news(symbol, limit=query.limit))
+
+
+@blueprint.get("/market/news/categories")
+def market_news_categories():
+    from ..services.news_intelligence import NEWS_CATEGORIES
+    return jsonify({
+        "categories": [
+            {"id": cat["categoryId"], "label": cat["label"]}
+            for cat in NEWS_CATEGORIES
+        ]
+    })

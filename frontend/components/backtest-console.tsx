@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { getBacktestPresets, runBacktests } from "@/lib/api";
+import { NLStrategyEditor } from "@/components/nl-strategy-editor";
 import {
   displayExecutionMode,
   displayText,
@@ -31,7 +32,6 @@ import {
   buildBacktestPayload,
   formatDecimal,
   formatMetricValue,
-  parseSymbolsInput,
   type BacktestFormValues,
   validateBacktestForm,
 } from "@/lib/backtests";
@@ -43,6 +43,10 @@ import type {
   BacktestSeriesPoint,
   BacktestSymbolResult,
 } from "@/types/api";
+
+const today = new Date();
+const DEFAULT_END = today.toISOString().slice(0, 10);
+const DEFAULT_START = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 const DEFAULT_STRATEGY = `def generate_signals(data, ctx):
     fast_window = int(ctx.params.get("fast_window", 5))
@@ -60,8 +64,8 @@ const DEFAULT_STRATEGY = `def generate_signals(data, ctx):
 
 const INITIAL_FORM: BacktestFormValues = {
   symbolsInput: "000001,600000",
-  startDate: "2025-01-01",
-  endDate: "2025-03-31",
+  startDate: DEFAULT_START,
+  endDate: DEFAULT_END,
   benchmarkSymbol: "159919",
   strategyMode: "preset",
   strategyPreset: "ma_cross",
@@ -103,6 +107,7 @@ export function BacktestConsole() {
   const [result, setResult] = useState<BacktestRunResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [nlMode, setNlMode] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -130,7 +135,6 @@ export function BacktestConsole() {
   }, []);
 
   const currentPreset = presets.find((item) => item.id === form.strategyPreset) || null;
-  const symbolCount = parseSymbolsInput(form.symbolsInput).length;
   const validationErrors = validateBacktestForm(form);
   const summaryItems = buildBacktestFormSummary(form, currentPreset?.label);
   const parameterGroups = groupParameterSchema(currentPreset);
@@ -194,7 +198,7 @@ export function BacktestConsole() {
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">结构化输入</span>
-            <CardTitle className="font-display">把输入按研究思路分组</CardTitle>
+            <CardTitle className="font-display">策略配置</CardTitle>
           </CardHeader>
           <CardContent>
             {error ? (
@@ -226,10 +230,7 @@ export function BacktestConsole() {
 
             <form className="grid gap-6" onSubmit={handleSubmit}>
             <div className="grid gap-4">
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-primary">市场范围</h4>
-                <p className="text-xs text-muted-foreground">先确定标的、时间、复权方式和可选基准。</p>
-              </div>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-primary">市场范围</h4>
               <div className="grid gap-2">
                 <Label htmlFor="symbolsInput">标的代码</Label>
                 <Input
@@ -292,16 +293,19 @@ export function BacktestConsole() {
             <Separator />
 
             <div className="grid gap-4">
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-primary">策略与参数</h4>
-                <p className="text-xs text-muted-foreground">预设模式从后端动态读取参数说明；自定义模式继续遵循策略函数契约。</p>
-              </div>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-primary">策略与参数</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-2">
                   <Label htmlFor="strategyMode">策略模式</Label>
                   <Select
-                    value={form.strategyMode}
+                    value={nlMode ? "nl_generate" : form.strategyMode}
                     onValueChange={(v) => {
+                      if (v === "nl_generate") {
+                        setNlMode(true);
+                        setForm((current) => ({ ...current, strategyMode: "custom" }));
+                        return;
+                      }
+                      setNlMode(false);
                       const nextMode = v as "preset" | "custom";
                       setForm((current) => ({ ...current, strategyMode: nextMode }));
                       if (nextMode === "preset" && presets.length) {
@@ -315,6 +319,7 @@ export function BacktestConsole() {
                     <SelectContent>
                       <SelectItem value="preset">预设策略</SelectItem>
                       <SelectItem value="custom">自定义策略</SelectItem>
+                      <SelectItem value="nl_generate">自然语言生成</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -338,6 +343,20 @@ export function BacktestConsole() {
                   </Select>
                 </div>
               </div>
+
+              {nlMode ? (
+                <NLStrategyEditor
+                  onApply={(code, params) => {
+                    setNlMode(false);
+                    setForm((current) => ({
+                      ...current,
+                      strategyMode: "custom",
+                      strategyCode: code,
+                      params: { ...params },
+                    }));
+                  }}
+                />
+              ) : null}
 
               {form.strategyMode === "preset" && currentPreset ? (
                 <>
@@ -366,7 +385,7 @@ export function BacktestConsole() {
                               value={String(form.params[item.name] ?? item.default)}
                               onChange={(e) => updatePresetParam(item.name, e.target.value)}
                             />
-                            <span className="text-xs text-muted-foreground">{item.helpText || "参数解释由后端提供。"}</span>
+                            <span className="text-xs text-muted-foreground">{item.helpText || ""}</span>
                           </div>
                         ))}
                       </div>
@@ -393,10 +412,7 @@ export function BacktestConsole() {
             <Separator />
 
             <div className="grid gap-4">
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-primary">执行假设</h4>
-                <p className="text-xs text-muted-foreground">这部分决定信号何时成交、按多大仓位成交，以及是否贴近 A 股整手交易约束。</p>
-              </div>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-primary">执行假设</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-2">
                   <Label htmlFor="initialCapital">初始资金</Label>
@@ -421,9 +437,7 @@ export function BacktestConsole() {
                       <SelectItem value="next_open">次日开盘成交</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className="text-xs text-muted-foreground">
-                    次日开盘成交在最后一根 K 线没有下一日开盘价时会忽略该次信号变化。
-                  </span>
+                  <span className="text-xs text-muted-foreground" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -464,22 +478,14 @@ export function BacktestConsole() {
                   />
                   <span className="text-xs text-muted-foreground">限制单次成交不超过当根 K 线成交量的一定比例。</span>
                 </div>
-                <div className="grid gap-2">
-                  <Label>执行说明</Label>
-                  <p className="text-xs text-muted-foreground">
-                    该参数直接交给 AKQuant，用于模拟容量约束和无法完全成交的情况。
-                  </p>
-                </div>
+                <div />
               </div>
             </div>
 
             <Separator />
 
             <div className="grid gap-4">
-              <div>
-                <h4 className="text-sm font-bold uppercase tracking-wider text-primary">成本与风控</h4>
-                <p className="text-xs text-muted-foreground">回测里最容易被忽略、但最影响真实可用性的部分。</p>
-              </div>
+              <h4 className="text-sm font-bold uppercase tracking-wider text-primary">成本与风控</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div className="grid gap-2">
                   <Label htmlFor="tradingFee">交易佣金</Label>
@@ -557,15 +563,9 @@ export function BacktestConsole() {
                   <Label htmlFor="reduceOnlyAfterRisk" className="text-sm">风控触发后只减仓</Label>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                当前会发送 {symbolCount || 0} 个标的。多标的是逐标的执行，不是组合级撮合。
-              </p>
             </div>
 
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-xs text-muted-foreground">
-                后端会先校验请求结构，再通过回测适配器执行。前端会保留输入，不会在失败时清空表单。
-              </p>
+            <div className="flex items-center justify-end gap-4">
               <Button disabled={loading} type="submit">
                 {loading ? <Skeleton className="size-4 rounded-full" /> : <Play className="size-4" />}
                 {loading ? "运行中" : "运行回测"}
@@ -578,7 +578,7 @@ export function BacktestConsole() {
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">提交复核</span>
-            <CardTitle className="font-display">提交前快速复核</CardTitle>
+            <CardTitle className="font-display">配置摘要</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3">
@@ -635,7 +635,7 @@ export function BacktestConsole() {
       <Card>
         <CardHeader>
           <span className="text-xs font-bold uppercase tracking-wider text-primary">结构化报告</span>
-          <CardTitle className="font-display">结果不只看收益，也看假设、风险和执行</CardTitle>
+          <CardTitle className="font-display">回测结果</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -647,7 +647,7 @@ export function BacktestConsole() {
             <BacktestResults result={result} />
           ) : (
             <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              还没有回测结果。先配置策略与执行假设，提交后这里会展示多标的结果卡、假设摘要、相对基准洞察和最近成交记录。
+              运行回测后查看结果。
             </div>
           )}
         </CardContent>

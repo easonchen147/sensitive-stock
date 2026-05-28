@@ -127,6 +127,27 @@ EVENT_RULES: tuple[dict[str, Any], ...] = (
         "phrases": ("停牌", "复牌"),
     },
 )
+NEWS_CATEGORIES: tuple[dict[str, Any], ...] = (
+    {"categoryId": "policy", "label": "政策", "keywords": ("政策", "国务院", "发改委", "央行", "监管", "法规", "条例", "通知", "意见")},
+    {"categoryId": "earnings", "label": "财报", "keywords": ("业绩", "营收", "净利润", "财报", "年报", "季报", "中报", "扭亏", "预增", "预亏")},
+    {"categoryId": "industry", "label": "行业", "keywords": ("行业", "产业", "板块", "概念", "技术", "创新", "突破", "量产", "投产")},
+    {"categoryId": "macro", "label": "宏观", "keywords": ("GDP", "CPI", "PMI", "经济", "利率", "汇率", "通胀", "通缩", "就业", "贸易")},
+    {"categoryId": "company_event", "label": "公司事件", "keywords": ("重组", "并购", "分拆", "上市", "退市", "增发", "配股", "股权激励", "高管")},
+    {"categoryId": "regulatory", "label": "监管", "keywords": ("证监会", "交易所", "问询函", "关注函", "处罚", "立案", "调查", "违规", "警示")},
+)
+
+
+def classify_news_category(title: str, content: str = "") -> str:
+    """Classify a news item into a category based on keywords in title/content."""
+    text = f"{title} {content}".lower()
+    best_category = "other"
+    best_score = 0
+    for cat in NEWS_CATEGORIES:
+        score = sum(1 for kw in cat["keywords"] if kw.lower() in text)
+        if score > best_score:
+            best_score = score
+            best_category = cat["categoryId"]
+    return best_category
 
 
 class Jin10NewsService:
@@ -285,6 +306,7 @@ class Jin10NewsService:
             "tags": normalized_tags,
             "sourceUrl": data.get("source_link") or data.get("link") or "",
             "source": "jin10",
+            "category": classify_news_category(title, content),
         }
 
     def _compose_calendar_content(self, data: dict[str, Any]) -> str:
@@ -456,6 +478,7 @@ class ClsTelegraphNewsSource:
             "tags": normalized_tags,
             "sourceUrl": source_url,
             "source": self.source,
+            "category": classify_news_category(title or content[:60] or self.source, content or title),
         }
 
 
@@ -609,6 +632,7 @@ class CninfoDisclosureNewsSource:
             "tags": tags,
             "sourceUrl": source_url,
             "source": self.source,
+            "category": classify_news_category(title or content[:60] or self.source, content or title),
         }
 
 
@@ -1154,6 +1178,7 @@ def _extract_headline_items(
                 "tags": [],
                 "sourceUrl": absolute_url,
                 "source": source,
+                "category": classify_news_category(title, title),
             }
         )
         if len(items) >= limit:
@@ -1253,6 +1278,7 @@ def _normalize_external_item(
         "tags": normalized_tags,
         "sourceUrl": raw_item.get("url") or raw_item.get("sourceUrl") or raw_item.get("link") or "",
         "source": source,
+        "category": classify_news_category(title or content[:60] or source, content or title),
     }
 
 

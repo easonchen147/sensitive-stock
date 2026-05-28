@@ -54,3 +54,14 @@ def cross_under(series_a: pd.Series, series_b: pd.Series) -> pd.Series:
     """Returns True when a crosses under b on the current bar."""
     prev = series_a.shift(1) >= series_b.shift(1)
     return (series_a < series_b) & prev
+
+
+def kdj(high: pd.Series, low: pd.Series, close: pd.Series, n: int = 9, m1: int = 3, m2: int = 3) -> pd.DataFrame:
+    """KDJ indicator: K, D, J lines."""
+    lowest_low = low.rolling(window=n, min_periods=n).min()
+    highest_high = high.rolling(window=n, min_periods=n).max()
+    rsv = (close - lowest_low) / (highest_high - lowest_low).replace(0, float('nan')) * 100
+    k = rsv.ewm(alpha=1/m1, min_periods=n, adjust=False).mean()
+    d = k.ewm(alpha=1/m2, min_periods=n, adjust=False).mean()
+    j = 3 * k - 2 * d
+    return pd.DataFrame({"k": k, "d": d, "j": j})

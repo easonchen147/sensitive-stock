@@ -25,6 +25,8 @@ import {
 } from "@/lib/api";
 import { StateSurface } from "@/components/workbench-layout";
 import { parseSymbolsInput } from "@/lib/backtests";
+import { StockDetailPanel } from "@/components/stock-detail-panel";
+import { KlineChart } from "@/components/kline-chart";
 import {
   displayEvaluationStatus,
   displayNumber,
@@ -155,12 +157,11 @@ function PredictionDetailCard({
           <MetricCard
             label="评估状态"
             value={evaluation ? displayEvaluationStatus(evaluation.status) : "待评估"}
-            note={evaluation?.note || "等待行情映射和评估结果。"}
+            note={evaluation?.note || ""}
           />
           <MetricCard
             label="实际涨跌幅"
             value={displaySignedPercent(evaluation?.actualChangePercent)}
-            note="仅在能映射到股票代码时展示。"
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -244,6 +245,8 @@ export function MarketWorkbench() {
   const [notice, setNotice] = useState("");
   const [selectedRunId, setSelectedRunId] = useState("");
   const [selectedPredictionId, setSelectedPredictionId] = useState("");
+  const [selectedSymbol, setSelectedSymbol] = useState("");
+  const [newsFilter, setNewsFilter] = useState<string>("all");
 
   async function loadData(
     nextSymbolsInput = symbolsInput,
@@ -459,10 +462,7 @@ export function MarketWorkbench() {
       <Card>
         <CardHeader>
           <span className="text-xs font-bold uppercase tracking-wider text-primary">预测控制台</span>
-          <CardTitle className="font-display">行情监控与多源资讯预测</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            页面并行读取行情、板块、资讯、情报和预测接口，并把来源质量、模型模式、降级状态和评估结果完整展示出来。
-          </p>
+          <CardTitle className="font-display">行情监控</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? <StateSurface state="loading" title="正在刷新市场研究数据。" /> : null}
@@ -555,7 +555,15 @@ export function MarketWorkbench() {
             <div className="grid gap-2">
               {quotes.length ? (
                 quotes.map((item) => (
-                  <div className="flex items-center justify-between rounded-lg border border-border p-3" key={item.symbol}>
+                  <button
+                    className={"w-full flex items-center justify-between rounded-lg border p-3 text-left transition-colors " +
+                      (selectedSymbol === item.symbol
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/50")}
+                    key={item.symbol}
+                    type="button"
+                    onClick={() => setSelectedSymbol(item.symbol === selectedSymbol ? "" : item.symbol)}
+                  >
                     <div>
                       <strong className="text-sm">{item.name || "未知股票"}</strong>
                       <span className="ml-2 font-mono text-xs text-muted-foreground">{item.symbol}</span>
@@ -569,7 +577,7 @@ export function MarketWorkbench() {
                         {displaySignedPercent(item.changePercent)}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 ))
               ) : (
                 <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -610,6 +618,14 @@ export function MarketWorkbench() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Stock Detail + K-line */}
+      {selectedSymbol ? (
+        <section className="grid gap-6 lg:grid-cols-[1fr_2fr]">
+          <StockDetailPanel symbol={selectedSymbol} />
+          <KlineChart symbol={selectedSymbol} />
+        </section>
+      ) : null}
 
       {/* News + Intelligence */}
       <section className="grid gap-6 lg:grid-cols-2">
@@ -652,9 +668,44 @@ export function MarketWorkbench() {
                 <AlertDescription>{sourceQuality.qualityNotes.join(" / ")}</AlertDescription>
               </Alert>
             ) : null}
+            {newsItems.length ? (
+              <div className="mb-3 flex flex-wrap gap-1">
+                <Badge
+                  variant={newsFilter === "all" ? "default" : "outline"}
+                  className="cursor-pointer text-[0.6rem]"
+                  onClick={() => setNewsFilter("all")}
+                >
+                  全部
+                </Badge>
+                <Badge
+                  variant={newsFilter === "important" ? "default" : "outline"}
+                  className="cursor-pointer text-[0.6rem]"
+                  onClick={() => setNewsFilter("important")}
+                >
+                  重要
+                </Badge>
+                {Array.from(new Set(newsItems.flatMap(n => n.tags))).slice(0, 8).map(tag => (
+                  <Badge
+                    key={tag}
+                    variant={newsFilter === tag ? "default" : "outline"}
+                    className="cursor-pointer text-[0.6rem]"
+                    onClick={() => setNewsFilter(newsFilter === tag ? "all" : tag)}
+                  >
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
             <div className="grid gap-2">
               {newsItems.length ? (
-                newsItems.slice(0, 8).map((item) => (
+                newsItems
+                  .filter(item => {
+                    if (newsFilter === "all") return true
+                    if (newsFilter === "important") return item.important
+                    return item.tags.includes(newsFilter)
+                  })
+                  .slice(0, 8)
+                  .map((item) => (
                   <div className="rounded-lg border border-border p-3" key={item.id}>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{item.publishedAt}</span>
@@ -685,10 +736,7 @@ export function MarketWorkbench() {
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">规则情报</span>
-            <CardTitle className="font-display">关键词、事件与板块提示</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              这里展示后端已提供的关键词提取、结构化事件提示和板块命中提示，只呈现可追溯的规则结果。
-            </p>
+            <CardTitle className="font-display">情报分析</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2">
@@ -756,10 +804,7 @@ export function MarketWorkbench() {
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">预测详情</span>
-            <CardTitle className="font-display">多源资讯预测与回测交接</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              后端优先使用深度求索快速模型；未配置密钥或模型失败时会明确降级到本地启发式预测，并保留回测交接参数。
-            </p>
+            <CardTitle className="font-display">AI 预测</CardTitle>
           </CardHeader>
           <CardContent>
             {activeRun ? (
@@ -839,10 +884,7 @@ export function MarketWorkbench() {
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">复盘历史</span>
-            <CardTitle className="font-display">预测历史与评估</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              最近运行会写入本地 JSONL 历史。选择历史记录后，页面会重新读取详情和最新行情评估。
-            </p>
+            <CardTitle className="font-display">预测历史</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2">
