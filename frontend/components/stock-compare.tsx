@@ -53,8 +53,8 @@ function getHighlightClass(
       ? validValues.every((v) => (values[index] ?? Infinity) <= v.value)
       : validValues.every((v) => (values[index] ?? -Infinity) >= v.value);
 
-  if (isBest) return "text-green-600 font-semibold";
-  if (isWorst) return "text-red-500 font-semibold";
+  if (isBest) return "text-positive font-semibold";
+  if (isWorst) return "text-negative font-semibold";
   return "";
 }
 
@@ -206,14 +206,14 @@ export function StockCompareView() {
               对比
             </Button>
           </div>
-          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+          {error && <p className="mt-2 text-sm text-negative">{error}</p>}
         </CardContent>
       </Card>
 
       {result && (
         <>
           {result.degraded && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+            <div className="rounded-lg border border-warning/30 bg-warning-soft px-4 py-2 text-sm text-warning">
               部分数据获取异常，结果可能不完整。
             </div>
           )}
