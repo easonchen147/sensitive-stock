@@ -20,6 +20,10 @@ const PROTECTED_APP_PATHS = new Set([
   "/diagnosis",
   "/factors",
   "/portfolio",
+  "/daily",
+  "/qa",
+  "/watchlist",
+  "/compare",
 ]);
 
 export function buildLoginRedirectPath(pathname: string): string {

@@ -95,6 +95,20 @@ export async function getCapabilities(): Promise<Capability[]> {
         path: "/api/v1/portfolio/optimize",
         summary: "组合优化目标、目标权重和统计指标接口可调用。",
       },
+      {
+        name: "qa",
+        label: "AI 问答",
+        status: "ready",
+        path: "/api/v1/qa/ask",
+        summary: "输入股票代码和自然语言问题，获取 AI 驱动的分析和回答。",
+      },
+      {
+        name: "daily",
+        label: "每日复盘",
+        status: "ready",
+        path: "/api/v1/daily/run",
+        summary: "AI 驱动的每日市场分析，包括精选推荐、板块分析和风险提示。",
+      },
     ];
   }
 }
@@ -298,6 +312,10 @@ export async function logout(): Promise<void> {
 
 // --- New API functions for Phase 1 ---
 
+export async function getStockCompare(symbols: string[]): Promise<import("@/types/api").StockCompareResponse> {
+  return fetchOpenApiRoute("stockCompare" as any, { query: { symbols: symbols.join(",") } });
+}
+
 export async function getStockDetail(symbol: string): Promise<import("@/types/api").StockDetail> {
   return fetchOpenApiRoute("stockDetail" as any, { pathParams: { symbol } });
 }
@@ -344,4 +362,24 @@ export async function getLatestDailyReport(): Promise<DailyReport> {
 
 export async function getDailyHistory(limit = 10): Promise<DailyHistoryResponse> {
   return fetchOpenApiRoute("dailyHistory" as any, { query: { limit } });
+}
+
+export async function registerUser(payload: import("@/types/api").RegisterPayload): Promise<AuthLoginResponse> {
+  return fetchOpenApiRoute("authRegister" as any, { body: payload });
+}
+
+export async function getWatchlist(): Promise<import("@/types/api").WatchlistResponse> {
+  return fetchOpenApiRoute("watchlistList" as any);
+}
+
+export async function addToWatchlist(payload: import("@/types/api").WatchlistAddPayload): Promise<import("@/types/api").WatchlistItem> {
+  return fetchOpenApiRoute("watchlistAdd" as any, { body: payload });
+}
+
+export async function updateWatchlistItem(symbol: string, payload: import("@/types/api").WatchlistUpdatePayload): Promise<import("@/types/api").WatchlistItem> {
+  return fetchOpenApiRoute("watchlistUpdate" as any, { pathParams: { symbol }, body: payload });
+}
+
+export async function removeFromWatchlist(symbol: string): Promise<import("@/types/api").OkResponse> {
+  return fetchOpenApiRoute("watchlistRemove" as any, { pathParams: { symbol } });
 }

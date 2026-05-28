@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { SymbolLink } from "@/components/symbol-link";
 import { Download, Play, Stethoscope, BarChart3, Briefcase, AlertTriangle, Sparkles, MessageSquareText, ArrowUpDown } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -275,7 +276,7 @@ export function ScreenerWorkbench() {
                 <TableBody>
                   {sortedItems.map((item) => (
                     <TableRow key={item.symbol}>
-                      <TableCell className="font-mono font-semibold">{item.symbol}</TableCell>
+                      <TableCell><SymbolLink symbol={item.symbol} className="font-semibold" /></TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell>{item.price.toFixed(2)}</TableCell>
                       <TableCell>
@@ -773,7 +774,7 @@ export function PortfolioWorkbench() {
             {result?.allocations.length ? (
               result.allocations.map((item) => (
                 <div key={item.symbol} className="flex items-center justify-between rounded-lg border border-positive/25 bg-positive-soft p-3">
-                  <span className="text-sm font-semibold">{item.symbol}</span>
+                  <SymbolLink symbol={item.symbol} className="text-sm font-semibold" />
                   <Badge variant="secondary">{(item.weight * 100).toFixed(2)}%</Badge>
                 </div>
               ))

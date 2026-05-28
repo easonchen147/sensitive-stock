@@ -821,6 +821,38 @@ export type DailyHistoryResponse = {
   items: DailyReport[];
 };
 
+// --- Stock Compare ---
+
+export type StockCompareItem = {
+  symbol: string;
+  name: string;
+  industry: string;
+  price: number | null;
+  changePercent: number | null;
+  pe: number | null;
+  pb: number | null;
+  marketCap: number | null;
+  turnoverRate: number | null;
+  volumeRatio: number | null;
+  high52w: number | null;
+  low52w: number | null;
+  ma5: number | null;
+  ma10: number | null;
+  ma20: number | null;
+  ma60: number | null;
+  rsi14: number | null;
+  macdDif: number | null;
+  macdDea: number | null;
+  macdHistogram: number | null;
+};
+
+export type StockCompareResponse = {
+  symbols: string[];
+  items: StockCompareItem[];
+  source: string;
+  degraded: boolean;
+};
+
 // Extended DiagnosisResponse with AI fields
 export type DiagnosisTechnicalScore = {
   name: string;
@@ -836,4 +868,45 @@ export type DiagnosisAIResponse = DiagnosisResponse & {
     indicators: DiagnosisTechnicalScore[];
     composite: number;
   };
+};
+
+// --- Watchlist ---
+
+export type WatchlistItem = {
+  symbol: string;
+  name?: string;
+  cost_price?: number | null;
+  shares?: number | null;
+  note?: string;
+  added_at: string;
+  updated_at: string;
+};
+
+export type WatchlistResponse = {
+  items: WatchlistItem[];
+};
+
+export type WatchlistAddPayload = {
+  symbol: string;
+  name?: string;
+  cost_price?: number;
+  shares?: number;
+  note?: string;
+};
+
+export type WatchlistUpdatePayload = {
+  name?: string;
+  cost_price?: number;
+  shares?: number;
+  note?: string;
+};
+
+export type OkResponse = {
+  ok: boolean;
+};
+
+export type RegisterPayload = {
+  username: string;
+  password: string;
+  display_name?: string;
 };

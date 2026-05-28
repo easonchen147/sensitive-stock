@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SymbolLink } from "@/components/symbol-link";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -191,8 +192,8 @@ export function DailyReportView() {
                   <TableBody>
                     {report.topPicks.map((pick) => (
                       <TableRow key={pick.symbol}>
-                        <TableCell className="font-mono font-bold">
-                          {pick.symbol}
+                        <TableCell>
+                          <SymbolLink symbol={pick.symbol} className="font-bold" />
                         </TableCell>
                         <TableCell>{pick.name}</TableCell>
                         <TableCell className="text-center">

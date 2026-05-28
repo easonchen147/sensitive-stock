@@ -5,9 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from .schemas.auth import LoginRequest
+from .schemas.auth import LoginRequest, RegisterRequest
+from .schemas.watchlist import WatchlistAddRequest, WatchlistUpdateRequest
 from .schemas.backtests import BacktestRunRequest
 from .schemas.market import (
+    MarketCompareQuery,
     MarketNewsQuery,
     MarketQuotesQuery,
     MarketSectorsQuery,
@@ -130,7 +132,8 @@ def build_openapi_document(
         "components": _build_components(),
         "tags": [
             {"name": "platform", "description": "Health, discovery, and capability inventory."},
-            {"name": "auth", "description": "Token login and session APIs."},
+            {"name": "auth", "description": "Token login, registration, and session APIs."},
+            {"name": "watchlist", "description": "Per-user stock watchlist management."},
             {"name": "market", "description": "AkShare market data and Jin10 intelligence APIs."},
             {"name": "backtests", "description": "Quantitative backtest APIs."},
             {"name": "capabilities", "description": "Current research capability runtime status."},
@@ -194,6 +197,83 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 response_schema="#/components/schemas/SessionResponse",
             )
         },
+        full("/auth/register"): {
+            "post": _operation(
+                method="post",
+                path=full("/auth/register"),
+                tag="auth",
+                operation_id="register",
+                summary="Register a new user account and receive a bearer token.",
+                request_schema="#/components/schemas/RegisterRequest",
+                response_schema="#/components/schemas/LoginResponse",
+                public=True,
+            )
+        },
+        full("/auth/change-password"): {
+            "post": _operation(
+                method="post",
+                path=full("/auth/change-password"),
+                tag="auth",
+                operation_id="changePassword",
+                summary="Change the authenticated user's password.",
+                request_schema="#/components/schemas/ChangePasswordRequest",
+                response_schema="#/components/schemas/OkResponse",
+            )
+        },
+        full("/watchlist"): {
+            "get": _operation(
+                method="get",
+                path=full("/watchlist"),
+                tag="watchlist",
+                operation_id="getWatchlist",
+                summary="Return the authenticated user's watchlist.",
+                response_schema="#/components/schemas/WatchlistResponse",
+            ),
+            "post": _operation(
+                method="post",
+                path=full("/watchlist"),
+                tag="watchlist",
+                operation_id="addWatchlistItem",
+                summary="Add a stock symbol to the user's watchlist.",
+                request_schema="#/components/schemas/WatchlistAddRequest",
+                response_schema="#/components/schemas/WatchlistItemResponse",
+            ),
+        },
+        full("/watchlist/{symbol}"): {
+            "put": _operation(
+                method="put",
+                path=full("/watchlist/{symbol}"),
+                tag="watchlist",
+                operation_id="updateWatchlistItem",
+                summary="Update a watchlist entry.",
+                request_schema="#/components/schemas/WatchlistUpdateRequest",
+                response_schema="#/components/schemas/WatchlistItemResponse",
+                parameters=[
+                    {
+                        "name": "symbol",
+                        "in": "path",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    }
+                ],
+            ),
+            "delete": _operation(
+                method="delete",
+                path=full("/watchlist/{symbol}"),
+                tag="watchlist",
+                operation_id="removeWatchlistItem",
+                summary="Remove a stock symbol from the user's watchlist.",
+                response_schema="#/components/schemas/OkResponse",
+                parameters=[
+                    {
+                        "name": "symbol",
+                        "in": "path",
+                        "required": True,
+                        "schema": {"type": "string"},
+                    }
+                ],
+            ),
+        },
         full("/capabilities"): {
             "get": _operation(
                 method="get",
@@ -223,6 +303,17 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
                 summary="Return latest quotes for one or more A-share symbols.",
                 response_schema="#/components/schemas/MarketQuotesResponse",
                 parameters=_query_parameters(MarketQuotesQuery),
+            )
+        },
+        full("/market/compare"): {
+            "get": _operation(
+                method="get",
+                path=full("/market/compare"),
+                tag="market",
+                operation_id="getStockCompare",
+                summary="Compare fundamentals and technicals for 2-5 A-share symbols.",
+                response_schema="#/components/schemas/StockCompareResponse",
+                parameters=_query_parameters(MarketCompareQuery),
             )
         },
         full("/market/sectors"): {
@@ -424,6 +515,24 @@ def _build_paths(api_prefix: str) -> dict[str, Any]:
 def _build_components() -> dict[str, Any]:
     schemas = {
         "LoginRequest": _schema(LoginRequest),
+        "RegisterRequest": _schema(RegisterRequest),
+        "ChangePasswordRequest": {
+            "type": "object",
+            "required": ["old_password", "new_password"],
+            "properties": {
+                "old_password": {"type": "string", "minLength": 1},
+                "new_password": {"type": "string", "minLength": 6, "maxLength": 128},
+            },
+            "additionalProperties": False,
+        },
+        "OkResponse": {
+            "type": "object",
+            "required": ["ok"],
+            "properties": {
+                "ok": {"type": "boolean"},
+            },
+            "additionalProperties": False,
+        },
         "BacktestRunRequest": _schema(BacktestRunRequest),
         "ScreenerRunRequest": _schema(ScreenerRunRequest),
         "ScreenerExportRequest": _schema(ScreenerExportRequest),
@@ -458,6 +567,33 @@ def _build_components() -> dict[str, Any]:
                 "expiresIn": {"type": "integer"},
                 "user": {"$ref": "#/components/schemas/UserPrincipal"},
             },
+        },
+        "WatchlistAddRequest": _schema(WatchlistAddRequest),
+        "WatchlistUpdateRequest": _schema(WatchlistUpdateRequest),
+        "WatchlistItemResponse": {
+            "type": "object",
+            "required": ["symbol", "name", "cost_price", "shares", "note", "added_at", "updated_at"],
+            "properties": {
+                "symbol": {"type": "string"},
+                "name": {"type": "string"},
+                "cost_price": {"type": "number"},
+                "shares": {"type": "number"},
+                "note": {"type": "string"},
+                "added_at": {"type": "string"},
+                "updated_at": {"type": "string"},
+            },
+            "additionalProperties": False,
+        },
+        "WatchlistResponse": {
+            "type": "object",
+            "required": ["items"],
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/WatchlistItemResponse"},
+                }
+            },
+            "additionalProperties": False,
         },
         "UserPrincipal": {
             "type": "object",
@@ -572,6 +708,47 @@ def _build_components() -> dict[str, Any]:
                 "changePercent": {"type": "number"},
             },
             "additionalProperties": True,
+        },
+        "StockCompareItem": {
+            "type": "object",
+            "required": ["symbol", "name", "industry"],
+            "properties": {
+                "symbol": {"type": "string"},
+                "name": {"type": "string"},
+                "industry": {"type": "string"},
+                "price": {"type": ["number", "null"]},
+                "changePercent": {"type": ["number", "null"]},
+                "pe": {"type": ["number", "null"]},
+                "pb": {"type": ["number", "null"]},
+                "marketCap": {"type": ["number", "null"]},
+                "turnoverRate": {"type": ["number", "null"]},
+                "volumeRatio": {"type": ["number", "null"]},
+                "high52w": {"type": ["number", "null"]},
+                "low52w": {"type": ["number", "null"]},
+                "ma5": {"type": ["number", "null"]},
+                "ma10": {"type": ["number", "null"]},
+                "ma20": {"type": ["number", "null"]},
+                "ma60": {"type": ["number", "null"]},
+                "rsi14": {"type": ["number", "null"]},
+                "macdDif": {"type": ["number", "null"]},
+                "macdDea": {"type": ["number", "null"]},
+                "macdHistogram": {"type": ["number", "null"]},
+            },
+            "additionalProperties": False,
+        },
+        "StockCompareResponse": {
+            "type": "object",
+            "required": ["symbols", "items", "source", "degraded"],
+            "properties": {
+                "symbols": {"type": "array", "items": {"type": "string"}},
+                "items": {
+                    "type": "array",
+                    "items": {"$ref": "#/components/schemas/StockCompareItem"},
+                },
+                "source": {"type": "string"},
+                "degraded": {"type": "boolean"},
+            },
+            "additionalProperties": False,
         },
         "MarketSectorsResponse": {
             "allOf": [

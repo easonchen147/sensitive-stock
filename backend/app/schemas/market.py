@@ -57,6 +57,27 @@ class MarketNewsQuery(BaseModel):
         return [str(item).strip() for item in items if str(item).strip()]
 
 
+class MarketCompareQuery(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="ignore")
+
+    symbols: list[str] = Field(min_length=2, max_length=5)
+
+    @field_validator("symbols", mode="before")
+    @classmethod
+    def normalize_symbols(cls, value: Any) -> list[str]:
+        if isinstance(value, str):
+            items = value.split(",")
+        else:
+            items = value or []
+
+        normalized = [str(item).strip() for item in items if str(item).strip()]
+        if len(normalized) < 2:
+            raise ValueError("symbols must contain at least 2 stock codes")
+        if len(normalized) > 5:
+            raise ValueError("symbols must contain at most 5 stock codes")
+        return normalized
+
+
 class PredictionHistoryQuery(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra="ignore")
 

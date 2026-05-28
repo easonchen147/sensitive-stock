@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SymbolLink } from "@/components/symbol-link";
 import { Play } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -15,9 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { getBacktestPresets, runBacktests } from "@/lib/api";
 import { NLStrategyEditor } from "@/components/nl-strategy-editor";
+import { StrategyCompare } from "@/components/strategy-compare";
 import {
   displayExecutionMode,
   displayText,
@@ -193,8 +196,15 @@ export function BacktestConsole() {
   }
 
   return (
-    <section className="grid gap-6">
-      <section className="grid gap-6 lg:grid-cols-[1.15fr_minmax(340px,0.85fr)]">
+    <Tabs defaultValue="single" className="grid gap-6">
+      <TabsList>
+        <TabsTrigger value="single">单策略回测</TabsTrigger>
+        <TabsTrigger value="compare">策略对比</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="single">
+      <section className="grid gap-6">
+        <section className="grid gap-6 lg:grid-cols-[1.15fr_minmax(340px,0.85fr)]">
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">结构化输入</span>
@@ -652,7 +662,13 @@ export function BacktestConsole() {
           )}
         </CardContent>
       </Card>
-    </section>
+      </section>
+      </TabsContent>
+
+      <TabsContent value="compare">
+        <StrategyCompare />
+      </TabsContent>
+    </Tabs>
   );
 }
 
@@ -792,7 +808,7 @@ function BacktestResults({ result }: { result: BacktestRunResponse }) {
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-primary">{item.symbol}</span>
+                <SymbolLink symbol={item.symbol} className="text-xs font-bold uppercase tracking-wider text-primary" />
                 <CardTitle className="font-display">
                   {item.settings.strategyLabel} · {displayExecutionMode(item.settings.executionMode)}
                 </CardTitle>

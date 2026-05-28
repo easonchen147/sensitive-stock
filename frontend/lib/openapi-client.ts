@@ -29,6 +29,7 @@ export const OPENAPI_ROUTE_BINDINGS = {
   openapiJson: { method: "GET", path: "/api/v1/openapi.json", public: true },
   health: { method: "GET", path: "/api/v1/health", public: true },
   authLogin: { method: "POST", path: "/api/v1/auth/login", public: true },
+  authRegister: { method: "POST", path: "/api/v1/auth/register", public: true },
   authSession: { method: "GET", path: "/api/v1/auth/session", public: false },
   capabilities: { method: "GET", path: "/api/v1/capabilities", public: false },
   backtestPresets: { method: "GET", path: "/api/v1/backtests/presets", public: false },
@@ -71,6 +72,7 @@ export const OPENAPI_ROUTE_BINDINGS = {
   factorsAnalyze: { method: "POST", path: "/api/v1/factors/analyze", public: false },
   portfolioOverview: { method: "GET", path: "/api/v1/portfolio", public: false },
   portfolioOptimize: { method: "POST", path: "/api/v1/portfolio/optimize", public: false },
+  stockCompare: { method: "GET", path: "/api/v1/market/compare", public: false },
   stockDetail: { method: "GET", path: "/api/v1/market/stock/{symbol}/detail", public: false },
   stockKline: { method: "GET", path: "/api/v1/market/stock/{symbol}/kline", public: false },
   stockFinancials: { method: "GET", path: "/api/v1/market/stock/{symbol}/financials", public: false },
@@ -81,6 +83,10 @@ export const OPENAPI_ROUTE_BINDINGS = {
   dailyRun: { method: "POST", path: "/api/v1/daily/run", public: false },
   dailyLatest: { method: "GET", path: "/api/v1/daily/latest", public: false },
   dailyHistory: { method: "GET", path: "/api/v1/daily/history", public: false },
+  watchlistList: { method: "GET", path: "/api/v1/watchlist", public: false },
+  watchlistAdd: { method: "POST", path: "/api/v1/watchlist", public: false },
+  watchlistUpdate: { method: "PUT", path: "/api/v1/watchlist/{symbol}", public: false },
+  watchlistRemove: { method: "DELETE", path: "/api/v1/watchlist/{symbol}", public: false },
 } as const;
 
 export type OpenApiRouteKey = keyof typeof OPENAPI_ROUTE_BINDINGS;
@@ -104,6 +110,7 @@ export type OpenApiRouteResponseMap = {
   diagnosisRun: DiagnosisResponse;
   factorsAnalyze: FactorAnalysisResponse;
   portfolioOptimize: PortfolioOptimizationResponse;
+  stockCompare: import("@/types/api").StockCompareResponse;
   stockDetail: import("@/types/api").StockDetail;
   stockKline: import("@/types/api").KlineResponse;
   stockFinancials: import("@/types/api").FinancialSummaryResponse;
@@ -114,6 +121,10 @@ export type OpenApiRouteResponseMap = {
   dailyRun: import("@/types/api").DailyReport;
   dailyLatest: import("@/types/api").DailyReport;
   dailyHistory: import("@/types/api").DailyHistoryResponse;
+  watchlistList: import("@/types/api").WatchlistResponse;
+  watchlistAdd: import("@/types/api").WatchlistItem;
+  watchlistUpdate: import("@/types/api").WatchlistItem;
+  watchlistRemove: import("@/types/api").OkResponse;
 };
 
 export type OpenApiRouteRequestMap = {
@@ -126,6 +137,8 @@ export type OpenApiRouteRequestMap = {
   generateStrategy: import("@/types/api").StrategyGeneratePayload;
   stockQA: import("@/types/api").StockQAPayload;
   dailyRun: import("@/types/api").DailyRunPayload;
+  watchlistAdd: import("@/types/api").WatchlistAddPayload;
+  watchlistUpdate: import("@/types/api").WatchlistUpdatePayload;
 };
 
 type QueryValue = string | number | boolean | null | undefined;

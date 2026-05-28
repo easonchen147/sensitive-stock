@@ -45,6 +45,20 @@ CAPABILITIES = [
         "path": "/api/v1/portfolio/optimize",
         "summary": "组合接口可调用，返回目标权重、统计指标、优化目标与风险信息。",
     },
+    {
+        "name": "qa",
+        "label": "AI 问答",
+        "status": "ready",
+        "path": "/api/v1/qa/ask",
+        "summary": "输入股票代码和自然语言问题，获取 AI 驱动的分析和回答。",
+    },
+    {
+        "name": "daily",
+        "label": "每日复盘",
+        "status": "ready",
+        "path": "/api/v1/daily/run",
+        "summary": "AI 驱动的每日市场分析，包括精选推荐、板块分析和风险提示。",
+    },
 ]
 
 

@@ -6,6 +6,7 @@ from flask import Blueprint, current_app, jsonify, request
 
 from ..errors import APIError
 from ..schemas.market import (
+    MarketCompareQuery,
     MarketNewsQuery,
     MarketQuotesQuery,
     MarketSectorsQuery,
@@ -296,6 +297,121 @@ def stock_news(symbol: str):
     query = StockNewsQuery.model_validate(query_params)
     service = _get_stock_detail_service()
     return jsonify(service.get_stock_news(symbol, limit=query.limit))
+
+
+def _compute_technical_indicators(kline_items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compute MA, RSI14, and MACD from kline data."""
+    closes: list[float] = []
+    for item in kline_items:
+        c = item.get("close")
+        if c is not None:
+            closes.append(float(c))
+
+    if not closes:
+        return {"ma5": None, "ma10": None, "ma20": None, "ma60": None, "rsi14": None, "macdDif": None, "macdDea": None, "macdHistogram": None}
+
+    def _ma(period: int) -> float | None:
+        if len(closes) < period:
+            return None
+        return round(sum(closes[-period:]) / period, 4)
+
+    def _ema(period: int) -> list[float]:
+        if len(closes) < period:
+            return []
+        k = 2.0 / (period + 1)
+        ema_values: list[float] = [sum(closes[:period]) / period]
+        for price in closes[period:]:
+            ema_values.append(price * k + ema_values[-1] * (1 - k))
+        return ema_values
+
+    def _rsi(period: int = 14) -> float | None:
+        if len(closes) < period + 1:
+            return None
+        gains: list[float] = []
+        losses: list[float] = []
+        for i in range(1, len(closes)):
+            diff = closes[i] - closes[i - 1]
+            gains.append(max(diff, 0.0))
+            losses.append(max(-diff, 0.0))
+        avg_gain = sum(gains[-period:]) / period
+        avg_loss = sum(losses[-period:]) / period
+        if avg_loss == 0:
+            return 100.0
+        rs = avg_gain / avg_loss
+        return round(100.0 - 100.0 / (1.0 + rs), 2)
+
+    def _macd() -> tuple[float | None, float | None, float | None]:
+        ema12 = _ema(12)
+        ema26 = _ema(26)
+        if not ema12 or not ema26:
+            return None, None, None
+        # Align: ema26 starts later, so trim ema12
+        offset = len(ema12) - len(ema26)
+        dif_series = [ema12[offset + i] - ema26[i] for i in range(len(ema26))]
+        if not dif_series:
+            return None, None, None
+        # DEA = EMA9 of DIF
+        if len(dif_series) < 9:
+            dea = None
+        else:
+            k = 2.0 / (9 + 1)
+            dea_vals = [sum(dif_series[:9]) / 9]
+            for d in dif_series[9:]:
+                dea_vals.append(d * k + dea_vals[-1] * (1 - k))
+            dea = round(dea_vals[-1], 4)
+        dif = round(dif_series[-1], 4)
+        hist = round(2 * (dif - dea), 4) if dea is not None else None
+        return dif, dea, hist
+
+    dif, dea, hist = _macd()
+
+    return {
+        "ma5": _ma(5),
+        "ma10": _ma(10),
+        "ma20": _ma(20),
+        "ma60": _ma(60),
+        "rsi14": _rsi(14),
+        "macdDif": dif,
+        "macdDea": dea,
+        "macdHistogram": hist,
+    }
+
+
+@blueprint.get("/market/compare")
+def stock_compare():
+    query = MarketCompareQuery.model_validate(request.args.to_dict(flat=True))
+    detail_service = _get_stock_detail_service()
+    items: list[dict[str, Any]] = []
+    degraded = False
+    for symbol in query.symbols:
+        detail = detail_service.get_stock_detail(symbol)
+        if detail.get("degraded"):
+            degraded = True
+        kline_result = detail_service.get_kline_data(symbol, period="daily")
+        if kline_result.get("degraded"):
+            degraded = True
+        indicators = _compute_technical_indicators(kline_result.get("items", []))
+        items.append({
+            "symbol": detail.get("symbol", symbol),
+            "name": detail.get("name", ""),
+            "industry": detail.get("industry", ""),
+            "price": detail.get("price"),
+            "changePercent": detail.get("changePercent"),
+            "pe": detail.get("pe"),
+            "pb": detail.get("pb"),
+            "marketCap": detail.get("marketCap"),
+            "turnoverRate": detail.get("turnoverRate"),
+            "volumeRatio": detail.get("volumeRatio"),
+            "high52w": detail.get("high52w"),
+            "low52w": detail.get("low52w"),
+            **indicators,
+        })
+    return jsonify({
+        "symbols": query.symbols,
+        "items": items,
+        "source": "akshare",
+        "degraded": degraded,
+    })
 
 
 @blueprint.get("/market/news/categories")

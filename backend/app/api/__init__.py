@@ -14,6 +14,7 @@ from .openapi import blueprint as openapi_blueprint
 from .portfolio import blueprint as portfolio_blueprint
 from .qa import blueprint as qa_blueprint
 from .screener import blueprint as screener_blueprint
+from .watchlist import blueprint as watchlist_blueprint
 
 
 def register_blueprints(app: Flask) -> None:
@@ -31,5 +32,6 @@ def register_blueprints(app: Flask) -> None:
         daily_blueprint,
         portfolio_blueprint,
         qa_blueprint,
+        watchlist_blueprint,
     ):
         app.register_blueprint(blueprint, url_prefix=api_prefix)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { SymbolLink } from "@/components/symbol-link";
 import { RefreshCw } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -566,7 +567,9 @@ export function MarketWorkbench() {
                   >
                     <div>
                       <strong className="text-sm">{item.name || "未知股票"}</strong>
-                      <span className="ml-2 font-mono text-xs text-muted-foreground">{item.symbol}</span>
+                      <span className="ml-2 font-mono text-xs text-muted-foreground">
+                        <SymbolLink symbol={item.symbol} className="text-xs" />
+                      </span>
                       <p className="mt-1 text-xs text-muted-foreground">
                         开盘 {displayNumber(item.open)} · 最高 {displayNumber(item.high)} · 最低 {displayNumber(item.low)}
                       </p>

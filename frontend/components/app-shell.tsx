@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Bookmark,
   Briefcase,
   Calendar,
   FlaskConical,
+  GitCompareArrows,
   LayoutDashboard,
   LineChart,
   MessageSquare,
@@ -95,6 +97,20 @@ const NAV_ITEMS = [
     badge: "日报",
     icon: Calendar,
     summary: "AI 驱动的每日市场分析、精选推荐和风险提示。",
+  },
+  {
+    href: "/compare",
+    label: "股票对比",
+    badge: "对比",
+    icon: GitCompareArrows,
+    summary: "2-5 只股票基本面和技术面指标的横向对比分析。",
+  },
+  {
+    href: "/watchlist",
+    label: "自选股",
+    badge: "持仓",
+    icon: Bookmark,
+    summary: "管理关注的股票，追踪持仓成本与盈亏。",
   },
 ];
 
