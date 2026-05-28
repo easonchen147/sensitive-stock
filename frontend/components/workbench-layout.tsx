@@ -1,153 +1,196 @@
-import type { CapabilityMetadata } from "@/types/api";
-import { displayText } from "@/lib/display";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
-export type WorkflowState = "loading" | "empty" | "degraded" | "error" | "ready";
+/* ─── Hero Banner ─── */
 
-const STATE_LABELS: Record<WorkflowState, string> = {
-  loading: "加载中",
-  empty: "暂无数据",
-  degraded: "降级可用",
-  error: "请求异常",
-  ready: "已就绪",
-};
-
-type MetricItem = {
+interface MetricItem {
   label: string;
   value: string | number;
   note?: string;
-};
+}
 
-type WorkbenchHeroProps = {
+interface WorkbenchHeroProps {
   eyebrow: string;
   title: string;
   description: string;
   metrics?: MetricItem[];
   meta?: string[];
-};
-
-export function WorkbenchHero({
-  eyebrow,
-  title,
-  description,
-  metrics = [],
-  meta = [],
-}: WorkbenchHeroProps) {
-  return (
-    <section className="workbench-hero">
-      <div className="workbench-hero-main">
-        <div className="eyebrow">{eyebrow}</div>
-        <h1 className="hero-title">{title}</h1>
-        <p className="hero-copy">{description}</p>
-      </div>
-      {metrics.length || meta.length ? (
-        <aside className="workbench-hero-aside" aria-label={`${title} 状态`}>
-          {metrics.length ? (
-            <div className="metric-grid compact">
-              {metrics.map((metric) => (
-                <MetricTile
-                  key={`${metric.label}-${metric.value}`}
-                  label={metric.label}
-                  note={metric.note}
-                  value={metric.value}
-                />
-              ))}
-            </div>
-          ) : null}
-          {meta.length ? (
-            <div className="meta-strip">
-              {meta.map((item) => (
-                <span className="meta-chip" key={item}>
-                  {item}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </aside>
-      ) : null}
-    </section>
-  );
 }
 
-export function WorkbenchSection({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
+export function WorkbenchHero({ eyebrow, title, description, metrics, meta }: WorkbenchHeroProps) {
   return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          {eyebrow ? <div className="eyebrow">{eyebrow}</div> : null}
-          <h2 className="panel-title">{title}</h2>
-          {description ? <p className="panel-subtitle">{description}</p> : null}
+    <div className="mb-8 grid gap-6 border-b border-border pb-6 lg:grid-cols-[1.35fr_0.65fr]">
+      <div className="min-w-0">
+        <span className="text-xs font-bold uppercase tracking-wider text-primary">{eyebrow}</span>
+        <h1 className="mt-2 font-display text-3xl font-bold leading-tight tracking-tight text-foreground lg:text-4xl">
+          {title}
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>
+        {meta?.length ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {meta.map((item) => (
+              <Badge key={item} variant="secondary" className="text-xs">
+                {item}
+              </Badge>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {metrics?.length ? (
+        <div className="grid content-start gap-3 rounded-lg border border-border bg-muted/50 p-4">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="grid gap-1">
+              <span className="text-[0.65rem] font-bold uppercase tracking-wider text-primary">
+                {metric.label}
+              </span>
+              <span className="font-display text-2xl font-bold text-foreground">{metric.value}</span>
+              {metric.note ? (
+                <span className="text-xs text-muted-foreground">{metric.note}</span>
+              ) : null}
+            </div>
+          ))}
         </div>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-export function MetricTile({ label, value, note }: MetricItem) {
-  return (
-    <div className="metric-card">
-      <span className="metric-label">{label}</span>
-      <div className="metric-value">{value}</div>
-      {note ? <div className="metric-note">{note}</div> : null}
+      ) : null}
     </div>
   );
 }
 
-export function StateSurface({
-  state,
-  title,
-  detail,
-}: {
-  state: WorkflowState;
+/* ─── Section Wrapper ─── */
+
+interface WorkbenchSectionProps {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function WorkbenchSection({ eyebrow, title, subtitle, children, className }: WorkbenchSectionProps) {
+  return (
+    <Card className={cn("gap-0", className)}>
+      <CardHeader className="pb-4">
+        <span className="text-xs font-bold uppercase tracking-wider text-primary">{eyebrow}</span>
+        <CardTitle className="font-display text-xl">{title}</CardTitle>
+        {subtitle ? (
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        ) : null}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+/* ─── Metric Tile ─── */
+
+interface MetricTileProps {
+  label: string;
+  value: string | number;
+  note?: string;
+}
+
+export function MetricTile({ label, value, note }: MetricTileProps) {
+  return (
+    <div className="grid gap-1 rounded-lg border border-border bg-card p-3">
+      <span className="text-[0.65rem] font-bold uppercase tracking-wider text-primary">{label}</span>
+      <span className="font-display text-xl font-bold text-foreground">{value}</span>
+      {note ? <span className="text-xs text-muted-foreground">{note}</span> : null}
+    </div>
+  );
+}
+
+/* ─── State Surface ─── */
+
+type SurfaceState = "loading" | "empty" | "degraded" | "error" | "ready";
+
+interface StateSurfaceProps {
+  state: SurfaceState;
   title: string;
   detail?: string;
-}) {
+}
+
+export function StateSurface({ state, title, detail }: StateSurfaceProps) {
+  if (state === "loading") {
+    return (
+      <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-4">
+        <Loader2 className="size-4 animate-spin text-primary" />
+        <div className="grid gap-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-primary">加载中</span>
+          <p className="text-sm text-muted-foreground">{title}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="size-4" />
+        <AlertTitle>错误</AlertTitle>
+        <AlertDescription>{detail || title}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (state === "degraded") {
+    return (
+      <Alert variant="destructive" className="border-warning/25 bg-warning-soft text-warning">
+        <AlertCircle className="size-4" />
+        <AlertTitle>降级</AlertTitle>
+        <AlertDescription>{detail || title}</AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (state === "ready") {
+    return (
+      <Alert className="border-positive/25 bg-positive-soft text-positive">
+        <CheckCircle2 className="size-4" />
+        <AlertTitle>就绪</AlertTitle>
+        <AlertDescription>{title}</AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="state-surface" data-state={state}>
-      <span className="state-kicker">{STATE_LABELS[state]}</span>
-      <strong>{title}</strong>
-      {detail ? <p>{detail}</p> : null}
+    <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
+      <p className="text-sm text-muted-foreground">{title}</p>
+      {detail ? <p className="mt-1 text-xs text-muted-foreground">{detail}</p> : null}
     </div>
   );
 }
 
-export function MetadataState({ metadata }: { metadata?: CapabilityMetadata }) {
-  if (!metadata) {
-    return null;
-  }
+/* ─── Metadata State ─── */
+
+interface MetadataStateProps {
+  metadata?: {
+    source?: string;
+    degraded?: boolean;
+    fallback?: string;
+  };
+}
+
+export function MetadataState({ metadata }: MetadataStateProps) {
+  if (!metadata) return null;
 
   if (metadata.degraded) {
     return (
       <StateSurface
         state="degraded"
-        title="后端返回降级结果。"
-        detail={[
-          metadata.warnings?.join("; "),
-          metadata.unavailableInputs?.length
-            ? `不可用输入：${metadata.unavailableInputs.join(", ")}`
-            : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
+        title={`数据源降级：${metadata.source || "未知"}`}
+        detail={metadata.fallback ? `备用源：${metadata.fallback}` : undefined}
       />
     );
   }
 
   return (
-    <StateSurface
-      state="ready"
-      title="后端响应已就绪。"
-      detail={`来源：${displayText(metadata.source, "后端服务")}`}
-    />
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <CheckCircle2 className="size-3 text-positive" />
+      <span>数据源：{metadata.source || "akshare"}</span>
+    </div>
   );
 }

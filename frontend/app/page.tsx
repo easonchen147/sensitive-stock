@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WorkbenchHero } from "@/components/workbench-layout";
 import { displayCapabilityStatus } from "@/lib/display";
 import { getCapabilitiesServer } from "@/lib/server-api";
@@ -19,7 +22,7 @@ export default async function HomePage() {
   const limited = capabilities.filter((item) => item.status === "limited");
 
   return (
-    <>
+    <div className="grid gap-6">
       <WorkbenchHero
         eyebrow="研究总览"
         title="A 股研究工作台"
@@ -39,48 +42,69 @@ export default async function HomePage() {
         meta={["中文投研终端", "接口契约", "受保护访问"]}
       />
 
-      <section className="dashboard-grid">
-        <aside className="panel">
-          <div className="eyebrow">研究入口</div>
-          <h2 className="panel-title">可执行研究闭环</h2>
-          <div className="action-grid">
-            {LIVE_ENTRIES.map((item) => (
-              <Link className="action-card" href={item.href} key={item.href}>
-                <strong>{item.title}</strong>
-                <p>{item.copy}</p>
-              </Link>
-            ))}
-          </div>
-        </aside>
-
-        <article className="panel">
-          <div className="eyebrow">能力地图</div>
-          <h2 className="panel-title">真实接口清单</h2>
-          <div className="status-list">
-            {capabilities.map((capability) => (
-              <div className="status-item" data-status={capability.status} key={capability.name}>
-                <div className="status-head">
-                  <strong>{capability.label}</strong>
-                  <span className="status-pill">{displayCapabilityStatus(capability.status)}</span>
-                </div>
-                <p>{capability.summary}</p>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="panel">
-          <div className="eyebrow">接口契约</div>
-          <h2 className="panel-title">接口事实源</h2>
-          <div className="status-list">
-            <div className="fact-item">运行时接口文档：/api/v1/openapi.json</div>
-            <div className="fact-item">静态契约文件：openapi.json</div>
-            <div className="fact-item">
-              除健康检查和登录外，业务接口均通过受保护访问链路调用。
+      <section className="grid gap-6 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">研究入口</span>
+            <CardTitle className="font-display">可执行研究闭环</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2">
+              {LIVE_ENTRIES.map((item) => (
+                <Link
+                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
+                  href={item.href}
+                  key={item.href}
+                >
+                  <div>
+                    <strong className="text-sm">{item.title}</strong>
+                    <p className="text-xs text-muted-foreground">{item.copy}</p>
+                  </div>
+                  <ArrowRight className="size-4 text-muted-foreground" />
+                </Link>
+              ))}
             </div>
-          </div>
-        </article>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">能力地图</span>
+            <CardTitle className="font-display">真实接口清单</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2">
+              {capabilities.map((capability) => (
+                <div className="rounded-lg border border-border p-3" key={capability.name}>
+                  <div className="flex items-center justify-between">
+                    <strong className="text-sm">{capability.label}</strong>
+                    <Badge variant={capability.status === "ready" ? "default" : "secondary"}>
+                      {displayCapabilityStatus(capability.status)}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{capability.summary}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">接口契约</span>
+            <CardTitle className="font-display">接口事实源</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2">
+              <div className="rounded-lg border border-border p-3 text-sm">运行时接口文档：/api/v1/openapi.json</div>
+              <div className="rounded-lg border border-border p-3 text-sm">静态契约文件：openapi.json</div>
+              <div className="rounded-lg border border-border p-3 text-sm">
+                除健康检查和登录外，业务接口均通过受保护访问链路调用。
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </section>
-    </>
+    </div>
   );
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { AppShell } from "@/components/app-shell";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
 
@@ -20,7 +22,10 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body>
-        <AppShell>{children}</AppShell>
+        <TooltipProvider>
+          <AppShell>{children}</AppShell>
+          <Toaster />
+        </TooltipProvider>
       </body>
     </html>
   );
