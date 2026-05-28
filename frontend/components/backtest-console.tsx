@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { SymbolLink } from "@/components/symbol-link";
 import { Play } from "lucide-react";
 
@@ -156,14 +157,20 @@ export function BacktestConsole() {
     try {
       const response = await runBacktests(buildBacktestPayload(form));
       setResult(response);
+      if (response.results.length) {
+        toast.success(`回测完成，共 ${response.results.length} 个策略`);
+      }
       if (!response.results.length && response.failures.length) {
-        setError(response.failures.map((item) => `${item.symbol}: ${item.message}`).join(" / "));
+        const msg = response.failures.map((item) => `${item.symbol}: ${item.message}`).join(" / ");
+        setError(msg);
+        toast.error(msg);
       }
     } catch (requestError) {
       const message =
         requestError instanceof Error ? requestError.message : "未知错误，无法完成回测请求。";
       setError(message);
       setResult(null);
+      toast.error(message);
     } finally {
       setLoading(false);
     }

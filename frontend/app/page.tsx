@@ -8,6 +8,7 @@ import { requireAuthenticatedPage } from "@/lib/server-auth";
 import {
   HotSectors,
   LatestNews,
+  MarketIndices,
 } from "@/components/dashboard-widgets";
 
 const LIVE_ENTRIES = [
@@ -45,6 +46,18 @@ export default async function HomePage() {
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">
+              大盘指数
+            </span>
+            <CardTitle className="font-display">市场概览</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MarketIndices />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <span className="text-xs font-bold uppercase tracking-wider text-primary">
               热门板块
             </span>
             <CardTitle className="font-display">概念板块</CardTitle>
@@ -53,7 +66,9 @@ export default async function HomePage() {
             <HotSectors />
           </CardContent>
         </Card>
+      </section>
 
+      <section className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <span className="text-xs font-bold uppercase tracking-wider text-primary">

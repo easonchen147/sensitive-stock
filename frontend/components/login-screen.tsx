@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { LogIn, UserPlus } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,10 +30,13 @@ export function LoginScreen() {
     setError("");
     try {
       await login({ username, password });
+      toast.success("登录成功");
       router.push(nextPath);
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "登录失败，请重试。");
+      const msg = caught instanceof Error ? caught.message : "登录失败，请重试。";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -44,10 +48,13 @@ export function LoginScreen() {
     setError("");
     try {
       await registerUser({ username, password, display_name: displayName || undefined });
+      toast.success("注册成功");
       router.push(nextPath);
       router.refresh();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "注册失败，请重试。");
+      const msg = caught instanceof Error ? caught.message : "注册失败，请重试。";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }

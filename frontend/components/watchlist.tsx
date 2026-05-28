@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,8 +65,11 @@ export function WatchlistView() {
     try {
       await removeFromWatchlist(symbol);
       setItems((prev) => prev.filter((i) => i.symbol !== symbol));
+      toast.success("已从自选股移除");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "删除失败");
+      const msg = err instanceof Error ? err.message : "删除失败";
+      setError(msg);
+      toast.error(msg);
     }
   };
 
@@ -236,8 +240,11 @@ function AddDialog({ open, onOpenChange, onAdded }: { open: boolean; onOpenChang
       setSymbol(""); setName(""); setCostPrice(""); setShares(""); setNote("");
       onOpenChange(false);
       onAdded();
+      toast.success("已添加到自选股");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "添加失败");
+      const msg = err instanceof Error ? err.message : "添加失败";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
@@ -306,8 +313,11 @@ function EditDialog({ item, onUpdated }: { item: EnrichedItem; onUpdated: () => 
       await updateWatchlistItem(item.symbol, updates);
       setOpen(false);
       onUpdated();
+      toast.success("自选股已更新");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "更新失败");
+      const msg = err instanceof Error ? err.message : "更新失败";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setBusy(false);
     }
